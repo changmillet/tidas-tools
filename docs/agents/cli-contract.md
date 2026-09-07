@@ -27,8 +27,8 @@ checkPaths:
   - README.md
   - README_CN.md
 lastReviewedAt: 2026-09-07
-lastReviewedCommit: f83b37876fd61fbb375318cce6380ab4d72174be
-lastReviewedNote: "Reviewed for tidas-tools #185 and the explicit compiler-baseline decision: all active CI/release jobs and source requirements use Rust 1.98.1 without a Rust 1.88 compatibility matrix. Exact original compiler-project terms supplement rustup component layouts using immutable source/archive evidence. Runtime behavior, four supported platforms and immutable release authorization remain unchanged."
+lastReviewedCommit: bbccee6a7e3c10ce1184e06fd7b621862ad6ce07
+lastReviewedNote: "Reviewed for tidas-tools #187: the append-only v0.3.0 release request targets exact qualified version commit bbccee6a7e3c10ce1184e06fd7b621862ad6ce07. Source versions, original notices, Rust1.98.1 and native runtime invariants are retained; tag publication and exact integration require their own completed evidence."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
