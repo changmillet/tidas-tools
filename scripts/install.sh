@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-REPOSITORY="${TIDAS_INSTALL_REPOSITORY:-tiangong-lca/tidas-tools}"
+REPOSITORY="${TIDAS_INSTALL_REPOSITORY:-tiangong-lca/tidas-toolkit}"
 PREFIX="${TIDAS_INSTALL_PREFIX:-/usr/local}"
 VERSION=""
 

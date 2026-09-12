@@ -213,3 +213,33 @@ fn missing_archive_notice_fails_after_outer_checksum_is_recomputed() {
     .unwrap_err();
     assert!(!matches!(error, DistError::ChecksumMismatch { .. }));
 }
+
+#[test]
+fn canonical_notice_source_keeps_historical_bytes_readable_without_accepting_other_sources() {
+    let temporary = tempfile::tempdir().unwrap();
+    let root = temporary.path();
+    let target = "aarch64-apple-darwin";
+    fixture(root, target);
+    let original = read_manifest(root);
+    assert_eq!(
+        original.source.repository,
+        "https://github.com/tiangong-lca/tidas-tools"
+    );
+    notice_bundle::verify(&root.join("notices"), &root.join("binary"), target, "0.2.2").unwrap();
+    let mut canonical = original.clone();
+    canonical.source.repository = "https://github.com/tiangong-lca/tidas-toolkit".to_owned();
+    write_manifest(root, &canonical);
+    notice_bundle::verify(&root.join("notices"), &root.join("binary"), target, "0.2.2").unwrap();
+    canonical.source.repository = "https://github.com/unrelated/tidas-toolkit".to_owned();
+    write_manifest(root, &canonical);
+    assert!(
+        notice_bundle::verify(&root.join("notices"), &root.join("binary"), target, "0.2.2")
+            .is_err()
+    );
+    let mut future = original;
+    future.version = "0.3.1".to_owned();
+    write_manifest(root, &future);
+    let error = notice_bundle::verify(&root.join("notices"), &root.join("binary"), target, "0.3.1")
+        .unwrap_err();
+    assert!(error.to_string().contains("native notice source identity"));
+}

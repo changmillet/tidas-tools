@@ -5,7 +5,7 @@ param(
 
     [string]$Destination = "$env:LOCALAPPDATA\Programs\tidas\bin",
 
-    [string]$Repository = "tiangong-lca/tidas-tools"
+    [string]$Repository = "tiangong-lca/tidas-toolkit"
 )
 
 $ErrorActionPreference = "Stop"

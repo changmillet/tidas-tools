@@ -27,9 +27,9 @@ checkPaths:
   - scripts/test-release-request.sh
   - scripts/validate-release-request.sh
   - scripts/sync-rust-package-assets.sh
-lastReviewedAt: 2026-09-07
-lastReviewedCommit: a083d11a37a3b327b140b26a2fcfb9dcb59dd858
-lastReviewedNote: "Reviewed for tidas-tools #187: coherent 0.3.0 workspace/public crate and path-dependency versions prepare the already-qualified native notice bundle and Rust1.98.1 baseline for immutable publication. The distribution manifest uses v2; external dependency resolution, domain behavior and executable asset bytes are unchanged. Publication and exact integration remain separately qualified."
+lastReviewedAt: 2026-09-13
+lastReviewedCommit: e237a6cf1d4c55ba490719a8fcee0f659d1f840c
+lastReviewedNote: "Reviewed for toolkit #189: canonical dispatch, installers and package metadata use tidas-toolkit/tidas-sdks. The v1 notice reader preserves the historical namespace through 0.3.0 without changing provenance authority, asset locks, release requests or CLI behavior."
 related:
   - AGENTS.md
   - .docpact/config.yaml
@@ -41,12 +41,12 @@ related:
 # TianGong TIDAS Tools 使用说明
 
 [![crates.io](https://img.shields.io/crates/v/tidas.svg)][crates.io]
-[![GitHub Release](https://img.shields.io/github/v/release/tiangong-lca/tidas-tools)][releases]
+[![GitHub Release](https://img.shields.io/github/v/release/tiangong-lca/tidas-toolkit)][releases]
 
 [crates.io]: https://crates.io/crates/tidas
-[releases]: https://github.com/tiangong-lca/tidas-tools/releases
+[releases]: https://github.com/tiangong-lca/tidas-toolkit/releases
 
-[English](https://github.com/tiangong-lca/tidas-tools/blob/main/README.md) | [中文](https://github.com/tiangong-lca/tidas-tools/blob/main/README_CN.md)
+[English](https://github.com/tiangong-lca/tidas-toolkit/blob/main/README.md) | [中文](https://github.com/tiangong-lca/tidas-toolkit/blob/main/README_CN.md)
 
 本仓库通过唯一的跨平台 Rust 可执行文件 `tidas` 提供 TIDAS 转换、导入、导出、
 校验、发布和 ruleset 能力。
@@ -160,7 +160,7 @@ tag，再显式从该 tag dispatch 原生 release workflow，使 artifact proven
 
 ```bash
 curl --proto '=https' --tlsv1.2 -fsSLO \
-  https://raw.githubusercontent.com/tiangong-lca/tidas-tools/main/scripts/install.sh
+  https://raw.githubusercontent.com/tiangong-lca/tidas-toolkit/main/scripts/install.sh
 sh install.sh --version 0.2.0 --prefix "$HOME/.local"
 ```
 

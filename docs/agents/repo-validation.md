@@ -26,9 +26,9 @@ checkPaths:
   - .github/workflows/**
   - .githooks/pre-push
   - scripts/**
-lastReviewedAt: 2026-09-07
-lastReviewedCommit: bbccee6a7e3c10ce1184e06fd7b621862ad6ce07
-lastReviewedNote: "Reviewed for tidas-tools #187: the append-only v0.3.0 release request targets exact qualified version commit bbccee6a7e3c10ce1184e06fd7b621862ad6ce07. Source versions, original notices, Rust1.98.1 and native runtime invariants are retained; tag publication and exact integration require their own completed evidence."
+lastReviewedAt: 2026-09-13
+lastReviewedCommit: e237a6cf1d4c55ba490719a8fcee0f659d1f840c
+lastReviewedNote: "Reviewed for toolkit #189: canonical dispatch, installers and package metadata use tidas-toolkit/tidas-sdks. The v1 notice reader preserves the historical namespace through 0.3.0 without changing provenance authority, asset locks, release requests or CLI behavior."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -142,3 +142,10 @@ native packaging or publication has completed.
 The hook runs strict Docpact, the Rust-only audit, both asset locks, format,
 clippy, and all workspace tests. Override an unusual comparison only with an
 explicit `DOCPACT_BASE_REF`.
+
+For repository migration, exercise the actual SDK-dispatch shell block with a
+local `gh` capture shim and verify the canonical endpoint plus unchanged exact
+SHA/event/package payload without sending a real refresh. Native notice tests
+must preserve historical input readability and reject unrelated namespaces and
+future versions claiming the historical namespace. Installer contracts and the
+full native package matrix retain their usual integrity requirements.

@@ -29,9 +29,9 @@ checkPaths:
   - scripts/**
   - .github/workflows/**
   - .githooks/pre-push
-lastReviewedAt: 2026-09-07
-lastReviewedCommit: bbccee6a7e3c10ce1184e06fd7b621862ad6ce07
-lastReviewedNote: "Reviewed for tidas-tools #187: the append-only v0.3.0 release request targets exact qualified version commit bbccee6a7e3c10ce1184e06fd7b621862ad6ce07. Source versions, original notices, Rust1.98.1 and native runtime invariants are retained; tag publication and exact integration require their own completed evidence."
+lastReviewedAt: 2026-09-13
+lastReviewedCommit: e237a6cf1d4c55ba490719a8fcee0f659d1f840c
+lastReviewedNote: "Reviewed for toolkit #189: canonical dispatch, installers and package metadata use tidas-toolkit/tidas-sdks. The v1 notice reader preserves the historical namespace through 0.3.0 without changing provenance authority, asset locks, release requests or CLI behavior."
 related:
   - .docpact/config.yaml
   - docs/agents/repo-architecture.md
@@ -81,7 +81,7 @@ complete executable-asset byte set. Both locks are generated and checked by
 `tidas-asset-lock`.
 
 The public TIDAS specification belongs in `tiangong-lca/tidas`; generated SDK
-surfaces belong in `tiangong-lca/tidas-sdk`; root multi-repo integration belongs
+surfaces belong in `tiangong-lca/tidas-sdks`; root multi-repo integration belongs
 in `lca-workspace`. This repo may dispatch an SDK refresh when owned schema or
 methodology assets change, but it does not own generated SDK code.
 
