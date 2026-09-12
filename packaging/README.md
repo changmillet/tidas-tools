@@ -9,7 +9,7 @@ For a completed `v0.1.0` artifact set:
 ```bash
 cargo run --locked -p tidas-dist -- metadata \
   --release-base-url \
-  https://github.com/tiangong-lca/tidas-tools/releases/download/v0.1.0 \
+  https://github.com/tiangong-lca/tidas-toolkit/releases/download/v0.1.0 \
   --artifacts-dir dist/artifacts \
   --output-dir dist/package-metadata
 ```

@@ -25,9 +25,9 @@ checkPaths:
   - .github/workflows/**
   - .githooks/pre-push
   - scripts/**
-lastReviewedAt: 2026-09-07
-lastReviewedCommit: bbccee6a7e3c10ce1184e06fd7b621862ad6ce07
-lastReviewedNote: "Reviewed for tidas-tools #187: the append-only v0.3.0 release request targets exact qualified version commit bbccee6a7e3c10ce1184e06fd7b621862ad6ce07. Source versions, original notices, Rust1.98.1 and native runtime invariants are retained; tag publication and exact integration require their own completed evidence."
+lastReviewedAt: 2026-09-13
+lastReviewedCommit: e237a6cf1d4c55ba490719a8fcee0f659d1f840c
+lastReviewedNote: "Reviewed for toolkit #189: canonical dispatch, installers and package metadata use tidas-toolkit/tidas-sdks. The v1 notice reader preserves the historical namespace through 0.3.0 without changing provenance authority, asset locks, release requests or CLI behavior."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -128,6 +128,12 @@ both.
 
 Owned schema/methodology changes may dispatch `tidas-sdk` refresh automation.
 Generated SDK code remains downstream and never becomes source of truth here.
+The canonical sender is `tiangong-lca/tidas-toolkit` (repository ID
+`936459656`, organization ID `327771381`); its dispatch targets
+`tiangong-lca/tidas-sdks`. The `tidas_tools_changed` event and exact commit
+payload retain their existing contract. Token authorization must cover the
+renamed downstream repository. Source/metadata-only changes do not dispatch
+a generated SDK refresh.
 
 ## XML/XSD/XSLT portability
 
@@ -157,6 +163,12 @@ The internal `tidas-dist` notice collectors retain checksum-verified Cargo
 normal/build source inputs, installed vcpkg target-port notices and original
 Rust library notice material. The complete producer binds those inputs and
 referenced terms to the actual executable, source commit, lock and toolchain.
+Current notice collectors and package-manager metadata use canonical
+`tidas-toolkit` source URLs. The v1 notice reader retains the old `tidas-tools`
+metadata namespace only for releases through `0.3.0`; this compatibility does
+not establish signature authority or change the executable, lock, notice or
+archive integrity checks. Archived manifests and release requests stay intact.
+
 Distribution-manifest v2 includes the digest and length of the complete native
 notice manifest; package/verify require matching original material and the exact
 archive inventory. Dependency edge scopes, target kinds and Rust source
@@ -183,7 +195,7 @@ installation, release, or invocation surface.
 
 - `tiangong-lca/tidas` owns the public specification and human-facing schema
   source.
-- `tiangong-lca/tidas-sdk` owns generated SDK packages.
+- `tiangong-lca/tidas-sdks` owns generated SDK packages.
 - `tidas-tools` owns executable behavior and packaged runtime assets.
 - `lca-workspace` owns multi-repo coordination and exact submodule integration.
 

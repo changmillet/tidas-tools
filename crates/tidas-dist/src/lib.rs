@@ -682,7 +682,7 @@ fn homebrew_formula(
     format!(
         r##"class Tidas < Formula
   desc "Cross-platform TIDAS conversion, import, export, validation, and release CLI"
-  homepage "https://github.com/tiangong-lca/tidas-tools"
+  homepage "https://github.com/tiangong-lca/tidas-toolkit"
   version "{version}"
   license "MIT"
 
@@ -770,7 +770,7 @@ Publisher: TianGong LCA
 PackageName: tidas
 License: MIT
 ShortDescription: Cross-platform TIDAS conversion, import, export, validation, and release CLI.
-PackageUrl: https://github.com/tiangong-lca/tidas-tools
+PackageUrl: https://github.com/tiangong-lca/tidas-toolkit
 ManifestType: defaultLocale
 ManifestVersion: 1.10.0
 "

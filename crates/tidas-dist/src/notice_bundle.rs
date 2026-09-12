@@ -134,7 +134,7 @@ pub fn collect(request: &CollectRequest<'_>) -> Result<NoticeBundleManifestV1, D
         target: request.target.to_owned(),
         executable,
         source: BuildSource {
-            repository: "https://github.com/tiangong-lca/tidas-tools".to_owned(),
+            repository: "https://github.com/tiangong-lca/tidas-toolkit".to_owned(),
             commit,
             cargo_lock_sha256: digest(&lock).sha256,
             vcpkg_commit,
@@ -326,9 +326,42 @@ fn validate_rust_target_libraries(
     Ok(())
 }
 
+// This is a notice metadata namespace, not a provenance trust decision. Official
+// signatures and release checksums remain the authority for source/binary identity.
+// Existing releases through v0.3.0 retain their original metadata bytes; current
+// source builds (including unchanged-version CI) always emit the canonical name.
+fn notice_repository_matches(repository: &str, version: &str) -> bool {
+    if repository == "https://github.com/tiangong-lca/tidas-toolkit" {
+        return true;
+    }
+    if repository != "https://github.com/tiangong-lca/tidas-tools" {
+        return false;
+    }
+    let parts: Vec<_> = version.split('.').collect();
+    if parts.len() != 3
+        || parts.iter().any(|part| {
+            part.is_empty()
+                || (part.len() > 1 && part.starts_with('0'))
+                || !part.bytes().all(|byte| byte.is_ascii_digit())
+        })
+    {
+        return false;
+    }
+    let Ok(major) = parts[0].parse::<u64>() else {
+        return false;
+    };
+    let Ok(minor) = parts[1].parse::<u64>() else {
+        return false;
+    };
+    let Ok(patch) = parts[2].parse::<u64>() else {
+        return false;
+    };
+    (major, minor, patch) <= (0, 3, 0)
+}
+
 fn validate_source(root: &Path, manifest: &NoticeBundleManifestV1) -> Result<(), DistError> {
     let source = &manifest.source;
-    if source.repository != "https://github.com/tiangong-lca/tidas-tools"
+    if !notice_repository_matches(&source.repository, &manifest.version)
         || !hex_id(&source.commit, 40)
         || !hex_id(&source.vcpkg_commit, 40)
         || !hex_id(&source.rustc_commit, 40)
