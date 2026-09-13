@@ -30,8 +30,8 @@ checkPaths:
   - .github/workflows/**
   - .githooks/pre-push
 lastReviewedAt: 2026-09-13
-lastReviewedCommit: e237a6cf1d4c55ba490719a8fcee0f659d1f840c
-lastReviewedNote: "Reviewed for toolkit #189: canonical dispatch, installers and package metadata use tidas-toolkit/tidas-sdks. The v1 notice reader preserves the historical namespace through 0.3.0 without changing provenance authority, asset locks, release requests or CLI behavior."
+lastReviewedCommit: a93e73f7376e1042ae4013e1f9c898a08bb9d3fb
+lastReviewedNote: "Reviewed for local Flow-property conversion: native decimal measurement, exact reference identities, import and validation gates, machine schemas, acyclic crate packaging, and CLI replay contract. No asset, release, or provider-selection changes."
 related:
   - .docpact/config.yaml
   - docs/agents/repo-architecture.md
@@ -57,7 +57,7 @@ Repository-owned behavior belongs in the corresponding crate:
 | `crates/tidas-cli` | parsing, configuration precedence, output routing, completion, cancellation wiring, and thin dispatch |
 | `crates/tidas-contracts` | stable reports, diagnostics, artifacts, completeness, and exit classes |
 | `crates/tidas-runtime` | explicit memory accounting, bounded queues, cancellation, and streaming spools |
-| `crates/tidas-conversion` | deterministic TIDAS/eILCD conversion with schema-ordered ILCD output and atomic publication |
+| `crates/tidas-conversion` | deterministic TIDAS/eILCD conversion, pure Flow-property measurement conversion, and atomic publication |
 | `crates/tidas-import` | bounded external-format import and canonical publication |
 | `crates/tidas-export` | repeatable-read database export, S3-compatible streaming, and deterministic ZIP output |
 | `crates/tidas-validation` | offline JSON Schema and ILCD/XSD validation |

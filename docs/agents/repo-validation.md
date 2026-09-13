@@ -27,8 +27,8 @@ checkPaths:
   - .githooks/pre-push
   - scripts/**
 lastReviewedAt: 2026-09-13
-lastReviewedCommit: e237a6cf1d4c55ba490719a8fcee0f659d1f840c
-lastReviewedNote: "Reviewed for toolkit #189: canonical dispatch, installers and package metadata use tidas-toolkit/tidas-sdks. The v1 notice reader preserves the historical namespace through 0.3.0 without changing provenance authority, asset locks, release requests or CLI behavior."
+lastReviewedCommit: a93e73f7376e1042ae4013e1f9c898a08bb9d3fb
+lastReviewedNote: "Reviewed for local Flow-property conversion: native decimal measurement, exact reference identities, import and validation gates, machine schemas, acyclic crate packaging, and CLI replay contract. No asset, release, or provider-selection changes."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -149,3 +149,21 @@ SHA/event/package payload without sending a real refresh. Native notice tests
 must preserve historical input readability and reject unrelated namespaces and
 future versions claiming the historical namespace. Installer contracts and the
 full native package matrix retain their usual integrity requirements.
+
+For Flow-property measurement changes, run the conversion, import, validation
+and CLI tests. Required examples cover nonzero reference IDs and reordered lists;
+kg/m3 and g/L forward/inverse conversion; factor-1 identity normalization;
+negative waste amounts and ordered bounds; zero descriptors versus selected zero
+factors; missing/exact-version dependencies; duplicate properties; unchanged
+source JSON; formula blocking; oversized decimal exponents and f64 range limits.
+The CLI contract tests exercise both file and explicit stdin requests, deterministic
+reports, and rejection of artifact output. Full schema validation remains separate
+from the bounded measurement request's identity/unit-chain check. A compiler run
+with `--ignore-rust-version` is auxiliary evidence only and does not replace the
+required Rust 1.98.1 canonical validation.
+
+The frozen openLCA oracle lacks its referenced UnitGroup/FlowProperty source
+objects. Its original package is now asserted to fail before publication. The
+parity test adds an explicit unit/property chain only to a temporary derived
+fixture, then checks the unchanged historical oracle's other semantic assertions.
+The frozen source and expected-result files remain unchanged.

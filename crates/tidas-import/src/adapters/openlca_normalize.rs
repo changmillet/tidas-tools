@@ -1,8 +1,8 @@
-use std::collections::BTreeMap;
-use std::str::FromStr;
+use std::collections::{BTreeMap, BTreeSet};
 
 use bigdecimal::BigDecimal;
 use serde_json::{Map, Value, json};
+use tidas_conversion::measurement::{Quantity, ScaleFactor, decimal_value, scale_quantity};
 
 use super::{AdapterContext, AdapterError};
 use crate::report::{ImportIssue, IssueSeverity, IssueSink};
@@ -31,10 +31,12 @@ struct FlowRecord {
 #[derive(Default)]
 struct Indexes {
     units: BTreeMap<String, UnitRecord>,
+    invalid_units: BTreeSet<String>,
     group_references: BTreeMap<String, GroupReference>,
     property_groups: BTreeMap<String, String>,
     group_properties: BTreeMap<String, Vec<String>>,
     flows: BTreeMap<String, FlowRecord>,
+    invalid_flows: BTreeMap<String, &'static str>,
 }
 
 #[derive(Default)]
@@ -141,9 +143,9 @@ fn emit_issues(stats: &Stats, issues: &mut dyn IssueSink) -> Result<(), AdapterE
     })?;
     if unresolved_total > 0 {
         issues.push(&ImportIssue {
-            severity: IssueSeverity::Warning,
+            severity: IssueSeverity::Error,
             code: "exchange_unit_normalization_unresolved".to_owned(),
-            message: "Some exchange amounts could not be normalized and were left unchanged."
+            message: "Some exchange amounts could not be normalized; affected imports are blocked before publication."
                 .to_owned(),
             source_object: None,
             context: BTreeMap::from([
@@ -171,6 +173,9 @@ fn normalize_exchange(exchange: &mut Map<String, Value>, indexes: &Indexes) -> O
     let Some(unit_id) = string(exchange.get("unitId")) else {
         return Outcome::NoUnitInfo;
     };
+    if indexes.invalid_units.contains(unit_id) {
+        return Outcome::Unresolved("duplicate_unit_identity");
+    }
     let Some(unit) = indexes.units.get(unit_id) else {
         return Outcome::Unresolved("unknown_unit");
     };
@@ -183,6 +188,9 @@ fn normalize_exchange(exchange: &mut Map<String, Value>, indexes: &Indexes) -> O
     let Some(flow_id) = string(exchange.get("flowRefId")) else {
         return Outcome::Unresolved("missing_flow_factors");
     };
+    if let Some(reason) = indexes.invalid_flows.get(flow_id) {
+        return Outcome::Unresolved(reason);
+    }
     let Some(flow) = indexes.flows.get(flow_id) else {
         return Outcome::Unresolved("missing_flow_factors");
     };
@@ -192,38 +200,82 @@ fn normalize_exchange(exchange: &mut Map<String, Value>, indexes: &Indexes) -> O
     let Some(reference_factor) = flow.factors.get(&flow.reference_property_id) else {
         return Outcome::Unresolved("missing_flow_factors");
     };
-    if property_factor == &BigDecimal::from(0) || reference_factor == &BigDecimal::from(0) {
-        return Outcome::Unresolved("zero_factor");
-    }
     let cross_property = property_id != flow.reference_property_id;
-    let target_group_id = if cross_property {
-        let Some(group) = indexes.property_groups.get(&flow.reference_property_id) else {
-            return Outcome::Unresolved("unknown_flow_property");
-        };
-        group
-    } else {
-        &unit.group_id
+    let Some(target_group_id) = indexes.property_groups.get(&flow.reference_property_id) else {
+        return Outcome::Unresolved("unknown_flow_property");
     };
     let Some(target) = indexes.group_references.get(target_group_id) else {
         return Outcome::Unresolved("missing_reference_unit");
     };
-    let factor = (&unit.factor * reference_factor) / property_factor;
-    if factor == 1 {
+    if target
+        .unit_id
+        .as_ref()
+        .is_some_and(|id| indexes.invalid_units.contains(id))
+    {
+        return Outcome::Unresolved("duplicate_unit_identity");
+    }
+    let quantity = Quantity {
+        amount: scalar_text(exchange.get("amount")),
+        minimum_amount: exchange
+            .get("minimumAmount")
+            .map(|value| scalar_text(Some(value))),
+        maximum_amount: exchange
+            .get("maximumAmount")
+            .map(|value| scalar_text(Some(value))),
+    };
+    let (converted, scale) = match scale_quantity(
+        &quantity,
+        &unit.factor,
+        property_factor,
+        reference_factor,
+        false,
+    ) {
+        Ok(value) => value,
+        Err(error) => return Outcome::Unresolved(error.code),
+    };
+    let exactly_one = scale.numerator == scale.denominator;
+    if exchange
+        .get("amountFormula")
+        .is_some_and(|value| !value.is_null() && value.as_str() != Some(""))
+        && !exactly_one
+    {
+        return Outcome::Unresolved("formula_requires_rescaling");
+    }
+    if exactly_one
+        && target.unit_id.as_deref() == Some(unit_id)
+        && string(exchange.get("unitName")) == Some(target.unit_name.as_str())
+        && string(exchange.get("flowPropertyRefId")) == Some(flow.reference_property_id.as_str())
+        && !cross_property
+    {
         return Outcome::AlreadyReference;
     }
-    let Some(amount) = decimal(exchange.get("amount")) else {
-        return Outcome::Unresolved("non_numeric_amount");
-    };
 
+    apply_normalized_exchange(
+        exchange,
+        target,
+        flow,
+        converted,
+        &scale,
+        unit,
+        cross_property,
+    )
+}
+
+fn apply_normalized_exchange(
+    exchange: &mut Map<String, Value>,
+    target: &GroupReference,
+    flow: &FlowRecord,
+    converted: Quantity,
+    scale: &ScaleFactor,
+    unit: &UnitRecord,
+    cross_property: bool,
+) -> Outcome {
     preserve(exchange, "amount", "sourceAmount");
     preserve(exchange, "unitId", "sourceUnitId");
     preserve(exchange, "unitName", "sourceUnitName");
     preserve(exchange, "flowPropertyRefId", "sourceFlowPropertyRefId");
     preserve(exchange, "flowPropertyName", "sourceFlowPropertyName");
-    exchange.insert(
-        "amount".to_owned(),
-        Value::String(decimal_text(&(amount * &factor))),
-    );
+    exchange.insert("amount".to_owned(), Value::String(converted.amount));
     match &target.unit_id {
         Some(id) => {
             exchange.insert("unitId".to_owned(), Value::String(id.clone()));
@@ -236,7 +288,7 @@ fn normalize_exchange(exchange: &mut Map<String, Value>, indexes: &Indexes) -> O
         "unitName".to_owned(),
         Value::String(target.unit_name.clone()),
     );
-    if cross_property {
+    {
         exchange.insert(
             "flowPropertyRefId".to_owned(),
             Value::String(flow.reference_property_id.clone()),
@@ -250,22 +302,26 @@ fn normalize_exchange(exchange: &mut Map<String, Value>, indexes: &Indexes) -> O
             }
         }
     }
-    for key in ["minimumAmount", "maximumAmount"] {
-        if let Some(bound) = decimal(exchange.get(key)) {
-            exchange.insert(
-                key.to_owned(),
-                Value::String(decimal_text(&(bound * &factor))),
-            );
+    for (key, value) in [
+        ("minimumAmount", converted.minimum_amount),
+        ("maximumAmount", converted.maximum_amount),
+    ] {
+        if let Some(value) = value {
+            exchange.insert(key.to_owned(), Value::String(value));
         }
     }
     exchange.insert(
         "amountNormalization".to_owned(),
         json!({
-            "factor": decimal_text(&factor),
+            "factor": scale.decimal,
+            "numerator": scale.numerator,
+            "denominator": scale.denominator,
+            "precision": tidas_conversion::measurement::PRECISION,
+            "rounding": "half-even",
             "sourceUnit": exchange.get("sourceUnitName").cloned().or_else(|| unit.name.clone().map(Value::String)).unwrap_or(Value::Null),
             "targetUnit": target.unit_name,
             "crossProperty": cross_property,
-            "amountFormulaNotRescaled": exchange.contains_key("amountFormula"),
+            "amountFormulaNotRescaled": false,
         }),
     );
     Outcome::Normalized { cross_property }
@@ -306,20 +362,7 @@ fn add_unit_indexes(store: &CanonicalStore, indexes: &mut Indexes) -> Result<(),
         let Some(units) = group.raw.get("units").and_then(Value::as_array) else {
             continue;
         };
-        let reference = units
-            .iter()
-            .filter_map(Value::as_object)
-            .find(|unit| {
-                unit.get("referenceUnit")
-                    .and_then(Value::as_bool)
-                    .unwrap_or(false)
-            })
-            .or_else(|| {
-                units
-                    .iter()
-                    .filter_map(Value::as_object)
-                    .find(|unit| decimal(unit.get("conversionFactor")) == Some(BigDecimal::from(1)))
-            });
+        let reference = select_reference_unit(units);
         if let Some(reference) = reference
             && let Some(name) = object_name(reference)
         {
@@ -338,17 +381,42 @@ fn add_unit_indexes(store: &CanonicalStore, indexes: &mut Indexes) -> Result<(),
             let Some(factor) = decimal(unit.get("conversionFactor")) else {
                 continue;
             };
-            indexes.units.insert(
-                id.to_owned(),
-                UnitRecord {
-                    factor,
-                    group_id: group.internal_id.clone(),
-                    name: object_name(unit).map(ToOwned::to_owned),
-                },
-            );
+            if indexes
+                .units
+                .insert(
+                    id.to_owned(),
+                    UnitRecord {
+                        factor,
+                        group_id: group.internal_id.clone(),
+                        name: object_name(unit).map(ToOwned::to_owned),
+                    },
+                )
+                .is_some()
+            {
+                indexes.invalid_units.insert(id.to_owned());
+            }
         }
     }
     Ok(())
+}
+
+fn select_reference_unit(units: &[Value]) -> Option<&Map<String, Value>> {
+    let mut declared = units.iter().filter_map(Value::as_object).filter(|unit| {
+        unit.get("referenceUnit")
+            .and_then(Value::as_bool)
+            .unwrap_or(false)
+    });
+    if let Some(first) = declared.next() {
+        return (declared.next().is_none()
+            && decimal(first.get("conversionFactor")) == Some(BigDecimal::from(1)))
+        .then_some(first);
+    }
+    let mut candidates = units
+        .iter()
+        .filter_map(Value::as_object)
+        .filter(|unit| decimal(unit.get("conversionFactor")) == Some(BigDecimal::from(1)));
+    let first = candidates.next()?;
+    candidates.next().is_none().then_some(first)
 }
 
 fn add_property_indexes(store: &CanonicalStore, indexes: &mut Indexes) -> Result<(), AdapterError> {
@@ -373,36 +441,52 @@ fn add_flow_indexes(store: &CanonicalStore, indexes: &mut Indexes) -> Result<(),
     for flow in store.iter_type("flows")? {
         let flow = flow?;
         let Some(entries) = flow.raw.get("flowProperties").and_then(Value::as_array) else {
+            indexes
+                .invalid_flows
+                .insert(flow.internal_id, "missing_flow_properties");
             continue;
         };
         let mut factors = BTreeMap::new();
-        let mut first = None;
         let mut reference = None;
-        for entry in entries.iter().filter_map(Value::as_object) {
+        let mut invalid = None;
+        for entry in entries {
             let Some(property) = entry.get("flowProperty").and_then(Value::as_object) else {
+                invalid = Some("missing_flow_property_identity");
                 continue;
             };
             let Some(id) = object_id(property) else {
+                invalid = Some("missing_flow_property_identity");
                 continue;
             };
-            let Some(factor) = entry
-                .get("conversionFactor")
-                .map_or_else(|| Some(BigDecimal::from(1)), |value| decimal(Some(value)))
-            else {
+            let Some(factor) = decimal(entry.get("conversionFactor")) else {
+                invalid = Some("missing_or_invalid_flow_factor");
                 continue;
             };
-            let pair = (id.to_owned(), object_name(property).map(ToOwned::to_owned));
-            first.get_or_insert_with(|| pair.clone());
+            if factors.insert(id.to_owned(), factor.clone()).is_some() {
+                invalid = Some("duplicate_flow_property");
+            }
             if entry
                 .get("isRefFlowProperty")
                 .and_then(Value::as_bool)
                 .unwrap_or(false)
             {
-                reference.get_or_insert_with(|| pair.clone());
+                if reference.is_some() {
+                    invalid = Some("duplicate_reference_flow_property");
+                }
+                if factor != 1 {
+                    invalid = Some("reference_property_not_one");
+                }
+                reference = Some((id.to_owned(), object_name(property).map(ToOwned::to_owned)));
             }
-            factors.insert(id.to_owned(), factor);
         }
-        let Some((reference_property_id, reference_property_name)) = reference.or(first) else {
+        if let Some(reason) = invalid {
+            indexes.invalid_flows.insert(flow.internal_id, reason);
+            continue;
+        }
+        let Some((reference_property_id, reference_property_name)) = reference else {
+            indexes
+                .invalid_flows
+                .insert(flow.internal_id, "missing_reference_flow_property");
             continue;
         };
         indexes.flows.insert(
@@ -424,15 +508,15 @@ fn preserve(exchange: &mut Map<String, Value>, source: &str, target: &str) {
 }
 
 fn decimal(value: Option<&Value>) -> Option<BigDecimal> {
-    match value? {
-        Value::String(value) => BigDecimal::from_str(value.trim()).ok(),
-        Value::Number(value) => BigDecimal::from_str(&value.to_string()).ok(),
-        _ => None,
-    }
+    value.and_then(|value| decimal_value(value).ok())
 }
 
-fn decimal_text(value: &BigDecimal) -> String {
-    value.normalized().to_string()
+fn scalar_text(value: Option<&Value>) -> String {
+    match value {
+        Some(Value::String(text)) => text.clone(),
+        Some(Value::Number(number)) => number.to_string(),
+        _ => String::new(),
+    }
 }
 
 fn string(value: Option<&Value>) -> Option<&str> {
@@ -494,7 +578,8 @@ mod tests {
             .unwrap();
 
         assert_normalized_values(&values);
-        assert_eq!(summary.warning_count, 2);
+        assert_eq!(summary.warning_count, 1);
+        assert_eq!(summary.error_count, 1);
         let issue_text = String::from_utf8(issue_bytes).unwrap();
         assert!(issue_text.contains("exchange_amounts_normalized_to_reference_units"));
         assert!(issue_text.contains("exchange_unit_normalization_unresolved"));
@@ -517,6 +602,111 @@ mod tests {
         })
         .unwrap();
         assert!(validation.summary.ok);
+    }
+
+    #[test]
+    fn factor_one_still_normalizes_property_and_unit_identity() {
+        let store = normalization_fixture();
+        let mut indexes = build_indexes(&store).unwrap();
+        indexes
+            .flows
+            .get_mut(FUEL)
+            .unwrap()
+            .factors
+            .insert(ENERGY_PROPERTY.to_owned(), BigDecimal::from(1));
+        let mut value = exchange(1, FUEL, "2", MJ, "MJ", ENERGY_PROPERTY);
+        assert!(matches!(
+            normalize_exchange(&mut value, &indexes),
+            Outcome::Normalized {
+                cross_property: true
+            }
+        ));
+        assert_eq!(value["amount"], "2");
+        assert_eq!(value["unitId"], KG);
+        assert_eq!(value["flowPropertyRefId"], MASS_PROPERTY);
+        assert_eq!(value["amountNormalization"]["factor"], "1");
+    }
+
+    #[test]
+    fn formulas_and_invalid_bounds_block_without_partial_mutation() {
+        let indexes = build_indexes(&normalization_fixture()).unwrap();
+        for (key, value, reason) in [
+            ("amountFormula", json!("a*b"), "formula_requires_rescaling"),
+            ("minimumAmount", json!("oops"), "invalid_decimal"),
+        ] {
+            let mut exchange = exchange(1, FUEL, "100", MJ, "MJ", ENERGY_PROPERTY);
+            exchange.insert(key.to_owned(), value);
+            let original = exchange.clone();
+            assert!(
+                matches!(normalize_exchange(&mut exchange, &indexes), Outcome::Unresolved(actual) if actual == reason)
+            );
+            assert_eq!(exchange, original);
+        }
+    }
+
+    #[test]
+    fn rounded_factor_one_does_not_hide_formula_rescaling() {
+        let mut indexes = build_indexes(&normalization_fixture()).unwrap();
+        indexes.flows.get_mut(FUEL).unwrap().factors.insert(
+            ENERGY_PROPERTY.to_owned(),
+            BigDecimal::from(1) + decimal(Some(&json!("1e-150"))).unwrap(),
+        );
+        let mut value = exchange(1, FUEL, "2", MJ, "MJ", ENERGY_PROPERTY);
+        value.insert("amountFormula".to_owned(), json!("a*b"));
+        let original = value.clone();
+        assert!(matches!(
+            normalize_exchange(&mut value, &indexes),
+            Outcome::Unresolved("formula_requires_rescaling")
+        ));
+        assert_eq!(value, original);
+    }
+
+    #[test]
+    fn duplicate_or_nonunit_reference_properties_do_not_get_silently_selected() {
+        for (entries, expected) in [
+            (
+                vec![
+                    (MASS_PROPERTY, "Mass", "1", true),
+                    (MASS_PROPERTY, "Mass", "2", false),
+                ],
+                "duplicate_flow_property",
+            ),
+            (
+                vec![(MASS_PROPERTY, "Mass", "2", true)],
+                "reference_property_not_one",
+            ),
+            (
+                vec![(MASS_PROPERTY, "Mass", "1", false)],
+                "missing_reference_flow_property",
+            ),
+        ] {
+            let mut store = CanonicalStore::create(None).unwrap();
+            add_flow(&mut store, FUEL, entries);
+            let indexes = build_indexes(&store).unwrap();
+            assert_eq!(indexes.invalid_flows.get(FUEL), Some(&expected));
+            assert!(!indexes.flows.contains_key(FUEL));
+        }
+    }
+
+    #[test]
+    fn ambiguous_unit_reference_and_duplicate_unit_id_are_blocked() {
+        let duplicate_reference = json!([
+            {"@id":KG,"name":"kg","conversionFactor":"1","referenceUnit":true},
+            {"@id":GRAM,"name":"g","conversionFactor":"1","referenceUnit":true}
+        ]);
+        assert!(select_reference_unit(duplicate_reference.as_array().unwrap()).is_none());
+        let mut store = CanonicalStore::create(None).unwrap();
+        add_entity(
+            &mut store,
+            "unitgroups",
+            MASS_GROUP,
+            json!([
+                {"@id":KG,"name":"kg","conversionFactor":"1","referenceUnit":true},
+                {"@id":KG,"name":"kg-copy","conversionFactor":"1"}
+            ]),
+        );
+        let indexes = build_indexes(&store).unwrap();
+        assert!(indexes.invalid_units.contains(KG));
     }
 
     fn normalization_fixture() -> CanonicalStore {

@@ -13,6 +13,7 @@ categories = ["science", "encoding"]
 publish = ["crates-io"]
 
 [dependencies]
+bigdecimal.workspace = true
 quick-xml.workspace = true
 serde.workspace = true
 serde_json = { workspace = true, features = ["arbitrary_precision", "preserve_order"] }
@@ -25,7 +26,7 @@ walkdir.workspace = true
 
 [dev-dependencies]
 jsonschema.workspace = true
-tidas-validation = { version = "=0.3.0", path = "../tidas-validation" }
+tidas-xml = { version = "=0.3.0", path = "../tidas-xml" }
 
 [lints]
 workspace = true

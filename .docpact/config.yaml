@@ -1,9 +1,9 @@
 version: 1
 layout: repo
 # Review note, 2026-09-07: #187 adds the immutable v0.3.0 request for exact bbccee6; source, runtime, platform and ownership invariants are unchanged.
-lastReviewedAt: 2026-09-13
-lastReviewedCommit: e237a6cf1d4c55ba490719a8fcee0f659d1f840c
-lastReviewedNote: "Reviewed for toolkit #189: canonical dispatch, installers and package metadata use tidas-toolkit/tidas-sdks. The v1 notice reader preserves the historical namespace through 0.3.0 without changing provenance authority, asset locks, release requests or CLI behavior."
+lastReviewedAt: "2026-09-13"
+lastReviewedCommit: "a93e73f7376e1042ae4013e1f9c898a08bb9d3fb"
+lastReviewedNote: "Reviewed for local Flow-property conversion: native decimal measurement, exact reference identities, import and validation gates, machine schemas, acyclic crate packaging, and CLI replay contract. No asset, release, or provider-selection changes."
 # Reviewed for Issue #177: macOS Intel is retired from the required native
 # matrix; Linux x86_64/ARM64, macOS Apple Silicon, and Windows x86_64 remain,
 # and ownership/routing/validation governance is otherwise unchanged.

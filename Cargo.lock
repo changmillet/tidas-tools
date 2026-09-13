@@ -2501,6 +2501,7 @@ dependencies = [
 name = "tidas-conversion"
 version = "0.3.0"
 dependencies = [
+ "bigdecimal",
  "jsonschema",
  "quick-xml",
  "serde",
@@ -2510,7 +2511,7 @@ dependencies = [
  "thiserror",
  "tidas-assets",
  "tidas-runtime",
- "tidas-validation",
+ "tidas-xml",
  "walkdir",
 ]
 
@@ -2642,6 +2643,7 @@ dependencies = [
  "tempfile",
  "thiserror",
  "tidas-assets",
+ "tidas-conversion",
  "tidas-rulesets",
  "tidas-runtime",
  "tidas-xml",

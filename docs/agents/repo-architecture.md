@@ -26,8 +26,8 @@ checkPaths:
   - .githooks/pre-push
   - scripts/**
 lastReviewedAt: 2026-09-13
-lastReviewedCommit: e237a6cf1d4c55ba490719a8fcee0f659d1f840c
-lastReviewedNote: "Reviewed for toolkit #189: canonical dispatch, installers and package metadata use tidas-toolkit/tidas-sdks. The v1 notice reader preserves the historical namespace through 0.3.0 without changing provenance authority, asset locks, release requests or CLI behavior."
+lastReviewedCommit: a93e73f7376e1042ae4013e1f9c898a08bb9d3fb
+lastReviewedNote: "Reviewed for local Flow-property conversion: native decimal measurement, exact reference identities, import and validation gates, machine schemas, acyclic crate packaging, and CLI replay contract. No asset, release, or provider-selection changes."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -50,7 +50,7 @@ alternate executable or runtime fallback is part of the product.
 | `crates/tidas-cli` | unified executable, invocation context, output routing, completion, cancellation wiring, thin dispatch |
 | `crates/tidas-contracts` | stable operation reports, diagnostics, artifacts, completeness, exit classes |
 | `crates/tidas-runtime` | bounded queues, memory reservations, cancellation, deterministic spools |
-| `crates/tidas-conversion` | bidirectional TIDAS JSON/eILCD XML transformation with schema-ordered ILCD output and atomic publication |
+| `crates/tidas-conversion` | bidirectional TIDAS JSON/eILCD XML transformation, pure Flow-property measurement conversion, schema-ordered output and atomic publication |
 | `crates/tidas-import` | format detection, disk-backed canonicalization, TIDAS/ILCD publication, bundles, mapping |
 | `crates/tidas-export` | repeatable-read PostgreSQL extraction, S3-compatible streaming, deterministic ZIP |
 | `crates/tidas-validation` | offline TIDAS JSON and ILCD/XSD validation, semantic indexes, batch protocol |
@@ -100,7 +100,8 @@ credentials.
 
 Validation resolves only embedded assets. Draft 7 schema resources and ILCD
 XSD contexts are compiled offline and reused. Native TIDAS schema/semantic
-validation remains independent of conversion; the CLI's default complete
+validation does not invoke package conversion; it reuses the pure
+`tidas-conversion::measurement` Flow-property semantics. The CLI's default complete
 TIDAS validation composes it with actual eILCD projection, XSD validation, and
 semantic recovery. This keeps dependency direction acyclic while making a
 successful user-facing validation a convertibility guarantee. Issue details stream or are
@@ -207,3 +208,17 @@ updated separately when the tracked delivery requires it.
 The versioned pre-push hook runs strict Docpact, the Rust-only audit, paired and
 full asset locks, formatting, clippy, and workspace tests. See
 `docs/agents/repo-validation.md` for focused and scale proof.
+
+The product/waste measurement module is the single BigDecimal arithmetic owner
+for the report-only `convert --to reference-unit` target and openLCA amount
+normalization. The validation crate reuses its reference-pointer and duplicate
+property checks. Reference property/unit identities are not rewritten or guessed;
+zero descriptive values remain data but cannot be conversion divisors. The
+import adapter preserves source amount/unit/property metadata, normalizes identity
+even for factor 1, and emits a publication-blocking error for unresolved factors,
+unsupported formula rescaling or malformed bounds. No runtime density table,
+provider equivalence engine, or Elementary Flow/CF asset change is introduced.
+
+Conversion's XSD test proof calls `tidas-xml::CompiledXsd` directly. It does not
+depend on the validation crate, preserving an acyclic package/release graph when
+validation consumes the shared pure measurement semantics.
