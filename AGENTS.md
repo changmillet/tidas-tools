@@ -30,8 +30,8 @@ checkPaths:
   - .github/workflows/**
   - .githooks/pre-push
 lastReviewedAt: 2026-09-13
-lastReviewedCommit: a93e73f7376e1042ae4013e1f9c898a08bb9d3fb
-lastReviewedNote: "Reviewed for local Flow-property conversion: native decimal measurement, exact reference identities, import and validation gates, machine schemas, acyclic crate packaging, and CLI replay contract. No asset, release, or provider-selection changes."
+lastReviewedCommit: "5bf38f9d5870ed548376e338a83bf3e116df66bf"
+lastReviewedNote: "Reviewed local normal-uncertainty gate: non-unit openLCA conversions block retained absolute normal dispersion before mutation; factor-one identity and log-normal dispersion remain supported. No request, asset, dependency, release, or provider semantics change."
 related:
   - .docpact/config.yaml
   - docs/agents/repo-architecture.md

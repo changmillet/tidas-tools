@@ -26,8 +26,8 @@ checkPaths:
   - .githooks/pre-push
   - scripts/**
 lastReviewedAt: 2026-09-13
-lastReviewedCommit: a93e73f7376e1042ae4013e1f9c898a08bb9d3fb
-lastReviewedNote: "Reviewed for local Flow-property conversion: native decimal measurement, exact reference identities, import and validation gates, machine schemas, acyclic crate packaging, and CLI replay contract. No asset, release, or provider-selection changes."
+lastReviewedCommit: "5bf38f9d5870ed548376e338a83bf3e116df66bf"
+lastReviewedNote: "Reviewed local normal-uncertainty gate: non-unit openLCA conversions block retained absolute normal dispersion before mutation; factor-one identity and log-normal dispersion remain supported. No request, asset, dependency, release, or provider semantics change."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -216,7 +216,11 @@ property checks. Reference property/unit identities are not rewritten or guessed
 zero descriptive values remain data but cannot be conversion divisors. The
 import adapter preserves source amount/unit/property metadata, normalizes identity
 even for factor 1, and emits a publication-blocking error for unresolved factors,
-unsupported formula rescaling or malformed bounds. No runtime density table,
+unsupported formula rescaling, absolute normal dispersion at a non-unit factor,
+or malformed bounds. The normal-dispersion gate runs before any exchange mutation
+and checks retained source `sd` as well as the projected target field. It leaves
+factor-1 identity changes and dimensionless log-normal dispersion untouched.
+No runtime density table,
 provider equivalence engine, or Elementary Flow/CF asset change is introduced.
 
 Conversion's XSD test proof calls `tidas-xml::CompiledXsd` directly. It does not

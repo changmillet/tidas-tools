@@ -27,8 +27,8 @@ checkPaths:
   - README.md
   - README_CN.md
 lastReviewedAt: 2026-09-13
-lastReviewedCommit: a93e73f7376e1042ae4013e1f9c898a08bb9d3fb
-lastReviewedNote: "Reviewed for local Flow-property conversion: native decimal measurement, exact reference identities, import and validation gates, machine schemas, acyclic crate packaging, and CLI replay contract. No asset, release, or provider-selection changes."
+lastReviewedCommit: "5bf38f9d5870ed548376e338a83bf3e116df66bf"
+lastReviewedNote: "Reviewed local normal-uncertainty gate: non-unit openLCA conversions block retained absolute normal dispersion before mutation; factor-one identity and log-normal dispersion remain supported. No request, asset, dependency, release, or provider semantics change."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -217,6 +217,13 @@ the fixed reference basis. Positive factors preserve signed waste quantities and
 scale both interval endpoints. Nonempty formulas are blocked: callers must
 verify/evaluate the formula and retain that provenance before submitting its
 amount. No formula is silently left at a different numerical scale.
+The measurement request supports amount and interval endpoints only; it does not
+accept arbitrary uncertainty parameters. During openLCA import, a non-unit
+conversion factor with normal-distribution absolute dispersion is blocked with
+`normal_uncertainty_requires_rescaling`. This includes an original `sd` retained
+in source trace even when the earlier adapter rounded or omitted its target
+dispersion. Factor-1 identity normalization remains allowed, and dimensionless
+log-normal geometric dispersion is preserved without rescaling.
 
 Decimal text is capped at 256 bytes and exponents at +/-512 before BigDecimal
 parsing. Conversion uses the locked BigDecimal implementation with an explicit

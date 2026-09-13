@@ -234,6 +234,9 @@ fn normalize_exchange(exchange: &mut Map<String, Value>, indexes: &Indexes) -> O
         Err(error) => return Outcome::Unresolved(error.code),
     };
     let exactly_one = scale.numerator == scale.denominator;
+    if !exactly_one && has_absolute_normal_dispersion(exchange) {
+        return Outcome::Unresolved("normal_uncertainty_requires_rescaling");
+    }
     if exchange
         .get("amountFormula")
         .is_some_and(|value| !value.is_null() && value.as_str() != Some(""))
@@ -259,6 +262,18 @@ fn normalize_exchange(exchange: &mut Map<String, Value>, indexes: &Indexes) -> O
         unit,
         cross_property,
     )
+}
+
+fn has_absolute_normal_dispersion(exchange: &Map<String, Value>) -> bool {
+    // openLCA normal sd is absolute despite the target field's relative name.
+    // Its adapter may already have rounded or omitted sd*2; never silently carry
+    // that value across a changed amount scale or infer it was absent at source.
+    string(exchange.get("uncertaintyDistributionType")) == Some("normal")
+        && (exchange.contains_key("relativeStandardDeviation95In")
+            || exchange
+                .get("sourceTrace")
+                .and_then(|trace| trace.pointer("/exchange/uncertainty/sd"))
+                .is_some_and(|value| !value.is_null()))
 }
 
 fn apply_normalized_exchange(
@@ -659,6 +674,76 @@ mod tests {
             Outcome::Unresolved("formula_requires_rescaling")
         ));
         assert_eq!(value, original);
+    }
+
+    #[test]
+    fn absolute_normal_dispersion_blocks_rescaling_without_partial_mutation() {
+        let indexes = build_indexes(&normalization_fixture()).unwrap();
+        for dispersion in [
+            json!({"relativeStandardDeviation95In":"6.000"}),
+            json!({"sourceTrace":{"exchange":{"uncertainty":{"sd":"100"}}}}),
+        ] {
+            let mut value = exchange(1, STEEL, "500", GRAM, "g", MASS_PROPERTY);
+            value.insert("uncertaintyDistributionType".to_owned(), json!("normal"));
+            value.insert("minimumAmount".to_owned(), json!("400"));
+            value.extend(dispersion.as_object().unwrap().clone());
+            let original = value.clone();
+            assert!(matches!(
+                normalize_exchange(&mut value, &indexes),
+                Outcome::Unresolved("normal_uncertainty_requires_rescaling")
+            ));
+            assert_eq!(value, original);
+        }
+    }
+
+    #[test]
+    fn normal_dispersion_survives_factor_one_identity_normalization() {
+        let mut indexes = build_indexes(&normalization_fixture()).unwrap();
+        indexes
+            .flows
+            .get_mut(FUEL)
+            .unwrap()
+            .factors
+            .insert(ENERGY_PROPERTY.to_owned(), BigDecimal::from(1));
+        let mut value = exchange(1, FUEL, "2", MJ, "MJ", ENERGY_PROPERTY);
+        value.insert("uncertaintyDistributionType".to_owned(), json!("normal"));
+        value.insert("relativeStandardDeviation95In".to_owned(), json!("0.600"));
+        assert!(matches!(
+            normalize_exchange(&mut value, &indexes),
+            Outcome::Normalized {
+                cross_property: true
+            }
+        ));
+        assert_eq!(value["amount"], "2");
+        assert_eq!(value["unitId"], KG);
+        assert_eq!(value["flowPropertyRefId"], MASS_PROPERTY);
+        assert_eq!(value["relativeStandardDeviation95In"], "0.600");
+    }
+
+    #[test]
+    fn lognormal_dispersion_is_dimensionless_and_normal_bounds_remain_convertible() {
+        let indexes = build_indexes(&normalization_fixture()).unwrap();
+        for kind in ["log-normal", "normal"] {
+            let mut value = exchange(1, STEEL, "500", GRAM, "g", MASS_PROPERTY);
+            value.insert("uncertaintyDistributionType".to_owned(), json!(kind));
+            value.insert("minimumAmount".to_owned(), json!("400"));
+            value.insert("maximumAmount".to_owned(), json!("600"));
+            if kind == "log-normal" {
+                value.insert("relativeStandardDeviation95In".to_owned(), json!("1.440"));
+            }
+            assert!(matches!(
+                normalize_exchange(&mut value, &indexes),
+                Outcome::Normalized {
+                    cross_property: false
+                }
+            ));
+            assert_eq!(value["amount"], "0.5");
+            assert_eq!(value["minimumAmount"], "0.4");
+            assert_eq!(value["maximumAmount"], "0.6");
+            if kind == "log-normal" {
+                assert_eq!(value["relativeStandardDeviation95In"], "1.440");
+            }
+        }
     }
 
     #[test]

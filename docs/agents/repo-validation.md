@@ -27,8 +27,8 @@ checkPaths:
   - .githooks/pre-push
   - scripts/**
 lastReviewedAt: 2026-09-13
-lastReviewedCommit: a93e73f7376e1042ae4013e1f9c898a08bb9d3fb
-lastReviewedNote: "Reviewed for local Flow-property conversion: native decimal measurement, exact reference identities, import and validation gates, machine schemas, acyclic crate packaging, and CLI replay contract. No asset, release, or provider-selection changes."
+lastReviewedCommit: "5bf38f9d5870ed548376e338a83bf3e116df66bf"
+lastReviewedNote: "Reviewed local normal-uncertainty gate: non-unit openLCA conversions block retained absolute normal dispersion before mutation; factor-one identity and log-normal dispersion remain supported. No request, asset, dependency, release, or provider semantics change."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -156,6 +156,10 @@ kg/m3 and g/L forward/inverse conversion; factor-1 identity normalization;
 negative waste amounts and ordered bounds; zero descriptors versus selected zero
 factors; missing/exact-version dependencies; duplicate properties; unchanged
 source JSON; formula blocking; oversized decimal exponents and f64 range limits.
+For openLCA uncertainty, prove that non-unit factors with absolute normal
+dispersion fail without partial mutation, including source `sd` omitted by the
+earlier projection; factor-1 normalization preserves normal dispersion; and
+log-normal dispersion stays dimensionless while amount and bounds are scaled.
 The CLI contract tests exercise both file and explicit stdin requests, deterministic
 reports, and rejection of artifact output. Full schema validation remains separate
 from the bounded measurement request's identity/unit-chain check. A compiler run
