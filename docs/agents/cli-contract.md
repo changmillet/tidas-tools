@@ -27,8 +27,8 @@ checkPaths:
   - README.md
   - README_CN.md
 lastReviewedAt: 2026-09-15
-lastReviewedCommit: a93e73f7376e1042ae4013e1f9c898a08bb9d3fb
-lastReviewedNote: "Reviewed for toolkit #193: CI archive reuse and Cargo package-output lookup do not change the single executable, command tree, JSON/exit contracts, data behavior or release authorization. Native qualification remains required; CI validation is pending."
+lastReviewedCommit: 71ab97b5f75058177820cbce933114b63a617b9b
+lastReviewedNote: "Reviewed for toolkit #193: archive-only native cache and seed preserve four-platform package/static/notice gates and tag-only publication; Cargo metadata resolves isolated package output. Shell negative regressions, actionlint and all seven real local gates pass. Hosted composite/native cold-warm CI remains pending; public CLI and runtime are unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

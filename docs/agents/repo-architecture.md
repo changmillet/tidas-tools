@@ -26,9 +26,9 @@ checkPaths:
   - .github/actions/native-xml/**
   - .githooks/pre-push
   - scripts/**
-lastReviewedAt: 2026-09-13
-lastReviewedCommit: e237a6cf1d4c55ba490719a8fcee0f659d1f840c
-lastReviewedNote: "Reviewed for toolkit #189: canonical dispatch, installers and package metadata use tidas-toolkit/tidas-sdks. The v1 notice reader preserves the historical namespace through 0.3.0 without changing provenance authority, asset locks, release requests or CLI behavior."
+lastReviewedAt: 2026-09-15
+lastReviewedCommit: 71ab97b5f75058177820cbce933114b63a617b9b
+lastReviewedNote: "Reviewed for toolkit #193: archive-only native cache and seed preserve four-platform package/static/notice gates and tag-only publication; Cargo metadata resolves isolated package output. Shell negative regressions, actionlint and all seven real local gates pass. Hosted composite/native cold-warm CI remains pending; public CLI and runtime are unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

@@ -25,7 +25,7 @@ runs:
         NATIVE_FAMILY: ${{ inputs.family }}
         TRIPLET: ${{ inputs.triplet }}
         VCPKG_COMMIT: ${{ inputs.baseline }}
-        CACHE_INPUTS: ${{ hashFiles('packaging/vcpkg/**', '.github/actions/native-xml/**', 'scripts/native-cache-contract.sh') }}
+        CACHE_INPUTS: ${{ hashFiles('packaging/vcpkg/**', '.github/actions/native-xml/**', '.github/workflows/rust-release.yml', 'scripts/native-cache-contract.sh') }}
       run: |
         key="$(bash scripts/native-cache-contract.sh key "$CACHE_PLATFORM" "${ImageOS:?}-${ImageVersion:?}" "$NATIVE_FAMILY" "$TRIPLET" "$VCPKG_COMMIT" "$CACHE_INPUTS")"
         echo "key=$key" >> "$GITHUB_OUTPUT"

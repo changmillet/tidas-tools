@@ -27,9 +27,9 @@ checkPaths:
   - .github/actions/native-xml/**
   - .githooks/pre-push
   - scripts/**
-lastReviewedAt: 2026-09-13
-lastReviewedCommit: e237a6cf1d4c55ba490719a8fcee0f659d1f840c
-lastReviewedNote: "Reviewed for toolkit #189: canonical dispatch, installers and package metadata use tidas-toolkit/tidas-sdks. The v1 notice reader preserves the historical namespace through 0.3.0 without changing provenance authority, asset locks, release requests or CLI behavior."
+lastReviewedAt: 2026-09-15
+lastReviewedCommit: 71ab97b5f75058177820cbce933114b63a617b9b
+lastReviewedNote: "Reviewed for toolkit #193: archive-only native cache and seed preserve four-platform package/static/notice gates and tag-only publication; Cargo metadata resolves isolated package output. Shell negative regressions, actionlint and all seven real local gates pass. Hosted composite/native cold-warm CI remains pending; public CLI and runtime are unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -176,7 +176,9 @@ manifest/action/key implementation bytes. vcpkg retains its own ABI selection.
 Main pushes affecting native-cache inputs seed default-branch archives through the
 same action, without running product release or attestation jobs. PRs, tags and
 manual dispatch retain their existing full native qualification behavior; publication
-remains tag-only. RustCI dependency selection is unchanged.
+remains tag-only. GitHub does not evaluate path filters for tag pushes, so the
+main seed path filter does not narrow version-tag qualification. RustCI dependency
+selection is unchanged.
 
 Compare actual cold/warm runs at matching keys/images: installation time, cache
 restore/save, whole jobs and all gate outcomes. Count the default-branch seed and
@@ -187,3 +189,10 @@ References: [Cargo metadata output](https://doc.rust-lang.org/cargo/commands/car
 [vcpkg archive cache](https://learn.microsoft.com/en-us/vcpkg/consume/binary-caching-default)
 and [binary cache providers](https://learn.microsoft.com/en-us/vcpkg/reference/binarycaching).
 The added cache action uses verified stable v6.1.0 pinned to its full executable SHA.
+
+Local #193 evidence: the unchanged source baseline passed audit, assets, formatting,
+clippy, workspace tests and sync; its package gate exposed the configured-target bug.
+After the fix, all seven canonical gates passed in an isolated target directory,
+including actual package/dry-run/checksum qualification (58.694s). These local
+results are not a native CI speedup claim. Workflow actionlint passes; composite
+action runtime/context and all four hosted cold/warm outcomes remain to be tested.
