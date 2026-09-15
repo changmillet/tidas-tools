@@ -23,6 +23,7 @@ checkPaths:
   - packaging/**
   - migration/**
   - .github/workflows/**
+  - .github/actions/native-xml/**
   - .githooks/pre-push
   - scripts/**
 lastReviewedAt: 2026-09-13
@@ -207,3 +208,10 @@ updated separately when the tracked delivery requires it.
 The versioned pre-push hook runs strict Docpact, the Rust-only audit, paired and
 full asset locks, formatting, clippy, and workspace tests. See
 `docs/agents/repo-validation.md` for focused and scale proof.
+
+
+Native dependency setup is shared by package qualification and default-branch cache
+seeding through `.github/actions/native-xml`. Reuse is limited to vcpkg binary
+archives; installed native inputs and final product/notice outputs remain fresh.
+Cache seeding owns no release, registry or attestation action. Package archive
+location comes from existing Cargo metadata, preserving portable isolated builds.

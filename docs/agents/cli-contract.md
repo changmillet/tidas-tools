@@ -26,9 +26,9 @@ checkPaths:
   - contracts/**
   - README.md
   - README_CN.md
-lastReviewedAt: 2026-09-13
-lastReviewedCommit: e237a6cf1d4c55ba490719a8fcee0f659d1f840c
-lastReviewedNote: "Reviewed for toolkit #189: canonical dispatch, installers and package metadata use tidas-toolkit/tidas-sdks. The v1 notice reader preserves the historical namespace through 0.3.0 without changing provenance authority, asset locks, release requests or CLI behavior."
+lastReviewedAt: 2026-09-15
+lastReviewedCommit: a93e73f7376e1042ae4013e1f9c898a08bb9d3fb
+lastReviewedNote: "Reviewed for toolkit #193: CI archive reuse and Cargo package-output lookup do not change the single executable, command tree, JSON/exit contracts, data behavior or release authorization. Native qualification remains required; CI validation is pending."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

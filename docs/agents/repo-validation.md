@@ -24,6 +24,7 @@ checkPaths:
   - packaging/**
   - migration/**
   - .github/workflows/**
+  - .github/actions/native-xml/**
   - .githooks/pre-push
   - scripts/**
 lastReviewedAt: 2026-09-13
@@ -149,3 +150,40 @@ SHA/event/package payload without sending a real refresh. Native notice tests
 must preserve historical input readability and reject unrelated namespaces and
 future versions claiming the historical namespace. Installer contracts and the
 full native package matrix retain their usual integrity requirements.
+
+
+## Native CI archive reuse and isolated Cargo outputs
+
+For native-cache or package-gate changes, also run `bash scripts/test-native-cache.sh`,
+`bash scripts/test-publish-target.sh`, shell syntax checks and actionlint on the
+changed workflows before pushing. Cache identity regressions cover missing inputs,
+image/platform/triplet/baseline/input-hash changes and required installation outcomes.
+Package regressions cover default and configured output paths (including spaces),
+stale default archives and one metadata query. The packaging gate uses Cargo's
+reported `target_directory`, so isolated `CARGO_TARGET_DIR` or Cargo configuration
+does not cause a false missing-archive failure after successful packaging.
+
+The native XML action restores only vcpkg compressed binary archives. It creates a
+fresh vcpkg checkout and installed tree and runs bootstrap/install every time. Only
+cache transport is optional; skipped or failed native installation fails the final
+action verifier. Windows checks each native command's exit code. Existing static
+imports, source-bound notices, repeatable archive bytes, checksums, smoke and the
+complete four-platform qualification remain mandatory. A cache hit is not a
+qualification receipt.
+
+Outer keys bind the hosted image/platform, triplet, pinned vcpkg baseline and the
+manifest/action/key implementation bytes. vcpkg retains its own ABI selection.
+Main pushes affecting native-cache inputs seed default-branch archives through the
+same action, without running product release or attestation jobs. PRs, tags and
+manual dispatch retain their existing full native qualification behavior; publication
+remains tag-only. RustCI dependency selection is unchanged.
+
+Compare actual cold/warm runs at matching keys/images: installation time, cache
+restore/save, whole jobs and all gate outcomes. Count the default-branch seed and
+cache storage as costs. Historical Windows steps (442s native release, 405s RustCI)
+are context, not measured savings. Current change's cold/warm qualification is pending.
+
+References: [Cargo metadata output](https://doc.rust-lang.org/cargo/commands/cargo-metadata.html),
+[vcpkg archive cache](https://learn.microsoft.com/en-us/vcpkg/consume/binary-caching-default)
+and [binary cache providers](https://learn.microsoft.com/en-us/vcpkg/reference/binarycaching).
+The added cache action uses verified stable v6.1.0 pinned to its full executable SHA.

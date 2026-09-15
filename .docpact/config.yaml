@@ -63,6 +63,10 @@ ownership:
           - scripts/validate-final-python-line.sh
           - .github/workflows/release-request.yml
           - .github/workflows/rust-release.yml
+          - .github/actions/native-xml/**
+          - scripts/native-cache-contract.sh
+          - scripts/test-native-cache.sh
+          - scripts/test-publish-target.sh
       ownerRepo: tidas-tools
     - id: tests-and-automation
       paths:
@@ -92,6 +96,7 @@ coverage:
     - .githooks/**
     - .github/releases/**
     - .github/workflows/**
+    - .github/actions/native-xml/**
     - docs/agents/**
     - migration/**
     - packaging/**
@@ -205,6 +210,10 @@ routing:
         - scripts/validate-final-python-line.sh
         - .github/workflows/release-request.yml
         - .github/workflows/rust-release.yml
+        - .github/actions/native-xml/**
+        - scripts/native-cache-contract.sh
+        - scripts/test-native-cache.sh
+        - scripts/test-publish-target.sh
     proof:
       paths:
         - docs/agents/repo-validation.md
@@ -338,6 +347,8 @@ rules:
         kind: automation
       - path: .github/workflows/**
         kind: automation
+      - path: .github/actions/native-xml/**
+        kind: native-dependency-automation
       - path: .githooks/**
         kind: local-gate
       - path: packaging/**
