@@ -190,7 +190,7 @@ impl SemanticCatalog {
             return Ok(());
         };
         if matches!(dataset_type, "Product flow" | "Waste flow")
-            && let Err(problem) = tidas_conversion::measurement::inspect_flow_properties(instance)
+            && let Err(problem) = tidas_measurement::inspect_flow_properties(instance)
         {
             emit(ValidationIssueV1::error(
                 problem.code,

@@ -28,8 +28,8 @@ checkPaths:
   - .githooks/pre-push
   - scripts/**
 lastReviewedAt: 2026-09-15
-lastReviewedCommit: "48ffc854d824c8d08987fd9491413953786b377f"
-lastReviewedNote: "Reviewed PR #192 against main #194: retain report-only Flow-property conversion, exact reference identity and normal-uncertainty gates together with native XML archive reuse and isolated Cargo package paths. No runtime schema, release, or authorization changes introduced by this merge."
+lastReviewedCommit: 88f94b92840767c0b814eb0d7fc7e78c8e94798f
+lastReviewedNote: "Reviewed PR #192 rework: isolate pure measurement in a thirteenth crate, restore package validation integration tests, preserve semantic gates and reject incomplete explicit unit selections. Qualify normal dependency boundaries and retain upstream native-cache/Cargo-target behavior; no dataset asset or public report changes."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -79,6 +79,7 @@ to install a redistributable or copy a development-machine DLL.
 | Change | Minimum local proof | Higher-risk proof |
 | --- | --- | --- |
 | CLI, contracts, or shared runtime | baseline; root and affected command help; deterministic JSON/version/completion; report/stdout separation; usage and exit-class tests | configuration precedence, cancellation, bounded queues, memory accounting, spool determinism, and all affected JSON Schema contracts |
+| shared measurement | test the crate independently (including its JSON-number features); exact-pointer, bounds, signed quantity, zero-descriptor, duplicate and input-hash fixtures; CLI request/report replay; preserve native semantic rejections | qualify the 13-package set, reject forbidden direct/transitive dependency edges, and retain full package-validation integration tests |
 | conversion | focused conversion + CLI tests; both directions; representative category round-trips; schema-order/XSD proof with scrambled JSON members; envelope and projection-recovery sidecars; source-semantic hash proof; tree hash; symlink, invalid XML, cancellation, budget, rollback | run the local package twice, validate every projected XML document, recover every adapted TIDAS fragment, compare tree hashes, and record wall time/RSS |
 | import | all supported format fixtures; native target validation; deterministic package/mapping/bundle hashes; malformed/unsupported input, cancellation, budget, atomic publication | large exchange/issue-spool fixture with wall time/RSS and cross-root determinism |
 | export | focused crate/CLI tests; report schema; secret redaction; unsafe paths; cancellation/budget; version suffixes; deterministic ZIP; atomic replacement | disposable local PostgreSQL and S3-compatible fixtures twice, comparing archive bytes and membership |
@@ -242,3 +243,19 @@ warm independently; do not attribute the entire job delta solely to this new
 archive cache. Compare actual keys/images, restored-package logs, archive size,
 transfer overhead and all qualification results. Synthetic skipped jobs are not
 timing samples. Default-branch seeding is still pending delivery.
+
+## Flow-property regression proof
+
+Compare retained main and candidate behavior on synthetic inputs. Preserve
+ordinary same-property/cross-property quantities, interval bounds and signed
+waste amounts. Prove the new general reference-unit request/report separately
+from the existing openLCA adapter math. Explicit unit/property evidence with a
+missing unit identity must fail before changing the destination, while a
+complete exact identity still normalizes successfully. Document the retained
+no-evidence legacy path instead of calling it a validated conversion.
+
+The package-target regression script covers the 13 public crates, permits the
+conversion-to-validation dev-only test edge, and rejects both a measurement
+upward dependency and an indirect validation-to-conversion production edge.
+Run `scripts/test-publish-target.sh` and real `scripts/publish-crates.sh check`;
+the mock script alone does not prove self-contained package contents.

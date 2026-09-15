@@ -1,7 +1,7 @@
 use std::io::Read;
 
 use tidas_contracts::{CommandNameV1, ExitClass, OperationReportV1};
-use tidas_conversion::measurement::convert_measurement;
+use tidas_measurement::convert_measurement;
 
 use crate::args::ConvertArgs;
 use crate::context::ExecutionContext;

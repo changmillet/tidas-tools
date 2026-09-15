@@ -1,5 +1,5 @@
 [package]
-name = "tidas-conversion"
+name = "tidas-measurement"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -7,25 +7,20 @@ license.workspace = true
 repository.workspace = true
 homepage.workspace = true
 readme.workspace = true
-description = "Deterministic bidirectional TIDAS JSON and eILCD XML conversion"
-keywords = ["tidas", "lca", "xml", "conversion"]
-categories = ["science", "encoding"]
+description = "Pure deterministic Flow-property inspection and evidence-bound quantity conversion"
+keywords = ["tidas", "lca", "measurement", "units"]
+categories = ["science", "mathematics"]
 publish = ["crates-io"]
 
 [dependencies]
-quick-xml.workspace = true
+bigdecimal.workspace = true
 serde.workspace = true
 serde_json = { workspace = true, features = ["arbitrary_precision", "preserve_order"] }
 sha2.workspace = true
-tempfile.workspace = true
 thiserror.workspace = true
-tidas-assets = { version = "=0.3.0", path = "../.." }
-tidas-runtime = { version = "=0.3.0", path = "../tidas-runtime" }
-walkdir.workspace = true
 
 [dev-dependencies]
 jsonschema.workspace = true
-tidas-validation = { version = "=0.3.0", path = "../tidas-validation" }
 
 [lints]
 workspace = true

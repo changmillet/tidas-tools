@@ -1260,11 +1260,11 @@ fn version_report(execution: &ExecutionContext) -> OperationReportV1 {
     );
     report.summary.insert(
         "flow_property_conversion_schema".to_owned(),
-        serde_json::json!(tidas_conversion::measurement::REPORT_SCHEMA),
+        serde_json::json!(tidas_measurement::REPORT_SCHEMA),
     );
     report.summary.insert(
         "flow_property_conversion_request_schema".to_owned(),
-        serde_json::json!(tidas_conversion::measurement::REQUEST_SCHEMA),
+        serde_json::json!(tidas_measurement::REQUEST_SCHEMA),
     );
     report
         .summary

@@ -253,6 +253,77 @@ fn matrix_request(source: &Path, output: &Path, requested_format: SourceFormat) 
     }
 }
 
+#[test]
+fn openlca_missing_exchange_unit_blocks_publication_without_replacing_output() {
+    let fixture =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/python-oracle-v1/openlca");
+    for unit in [None, Some(serde_json::json!({"name": "kg"}))] {
+        let directory = tempdir().unwrap();
+        let source = complete_openlca_unit_chain(&fixture, &directory.path().join("source"));
+        let process_path = source.join("processes/22222222-2222-4222-8222-222222222222.json");
+        let mut process: Value = serde_json::from_slice(&fs::read(&process_path).unwrap()).unwrap();
+        let exchange = process["exchanges"][0].as_object_mut().unwrap();
+        exchange.insert(
+            "flowProperty".to_owned(),
+            serde_json::json!({
+                "@id": "77777777-7777-4777-8777-777777777777", "name": "Mass"
+            }),
+        );
+        match unit {
+            Some(unit) => {
+                exchange.insert("unit".to_owned(), unit);
+            }
+            None => {
+                exchange.remove("unit");
+            }
+        }
+        fs::write(&process_path, serde_json::to_vec(&process).unwrap()).unwrap();
+        let output = directory.path().join("output");
+        for existing_output in [false, true] {
+            if existing_output {
+                fs::create_dir(&output).unwrap();
+                fs::write(output.join("sentinel"), "previous accepted package").unwrap();
+            }
+            let result = run_import(&matrix_request(
+                &source,
+                &output,
+                SourceFormat::OpenlcaJsonld,
+            ));
+            assert!(
+                matches!(
+                    result,
+                    Err(tidas_import::ImportExecutionError::SourceIssues { count: 1 })
+                ),
+                "{result:?}"
+            );
+            if existing_output {
+                assert_eq!(
+                    fs::read_to_string(output.join("sentinel")).unwrap(),
+                    "previous accepted package"
+                );
+                assert_eq!(fs::read_dir(&output).unwrap().count(), 1);
+            } else {
+                assert!(!output.exists());
+            }
+        }
+    }
+}
+
+#[test]
+fn openlca_explicit_reference_unit_remains_importable() {
+    let fixture =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/python-oracle-v1/openlca");
+    let directory = tempdir().unwrap();
+    let source = complete_openlca_unit_chain(&fixture, &directory.path().join("source"));
+    let output = directory.path().join("output");
+    let report = run_matrix_fixture(&source, &output, SourceFormat::OpenlcaJsonld);
+    assert_eq!(report.error_count, 0);
+    assert_eq!(report.tidas_validation_issue_count, 0);
+    assert_eq!(report.ilcd_validation_issue_count, Some(0));
+    assert!(output.join("tidas").is_dir());
+    assert!(output.join("ilcd").is_dir());
+}
+
 fn complete_openlca_unit_chain(source: &Path, target: &Path) -> PathBuf {
     const PROPERTY: &str = "77777777-7777-4777-8777-777777777777";
     const GROUP: &str = "88888888-8888-4888-8888-888888888888";

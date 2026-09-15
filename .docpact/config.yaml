@@ -2,8 +2,8 @@ version: 1
 layout: repo
 # Review note, 2026-09-07: #187 adds the immutable v0.3.0 request for exact bbccee6; source, runtime, platform and ownership invariants are unchanged.
 lastReviewedAt: "2026-09-15"
-lastReviewedCommit: "48ffc854d824c8d08987fd9491413953786b377f"
-lastReviewedNote: "Reviewed PR #192 against main #194: retain report-only Flow-property conversion, exact reference identity and normal-uncertainty gates together with native XML archive reuse and isolated Cargo package paths. No runtime schema, release, or authorization changes introduced by this merge."
+lastReviewedCommit: "88f94b92840767c0b814eb0d7fc7e78c8e94798f"
+lastReviewedNote: "Reviewed PR #192 rework: isolate pure measurement in a thirteenth crate, restore package validation integration tests, preserve semantic gates and reject incomplete explicit unit selections. Qualify normal dependency boundaries and retain upstream native-cache/Cargo-target behavior; no dataset asset or public report changes."
 # Reviewed for Issue #177: macOS Intel is retired from the required native
 # matrix; Linux x86_64/ARM64, macOS Apple Silicon, and Windows x86_64 remain,
 # and ownership/routing/validation governance is otherwise unchanged.
@@ -141,6 +141,7 @@ routing:
         - contracts/**
     conversion:
       paths:
+        - crates/tidas-measurement/**
         - crates/tidas-cli/**
         - crates/tidas-conversion/**
         - crates/tidas-contracts/**
@@ -150,6 +151,7 @@ routing:
         - assets/**
     import:
       paths:
+        - crates/tidas-measurement/**
         - crates/tidas-cli/**
         - crates/tidas-conversion/**
         - crates/tidas-import/**
@@ -167,6 +169,7 @@ routing:
         - contracts/export-report.v1.schema.json
     validation:
       paths:
+        - crates/tidas-measurement/**
         - crates/tidas-cli/**
         - crates/tidas-contracts/**
         - crates/tidas-references/**

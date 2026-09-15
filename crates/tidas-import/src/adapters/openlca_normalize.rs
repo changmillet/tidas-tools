@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use bigdecimal::BigDecimal;
 use serde_json::{Map, Value, json};
-use tidas_conversion::measurement::{Quantity, ScaleFactor, decimal_value, scale_quantity};
+use tidas_measurement::{Quantity, ScaleFactor, decimal_value, scale_quantity};
 
 use super::{AdapterContext, AdapterError};
 use crate::report::{ImportIssue, IssueSeverity, IssueSink};
@@ -171,7 +171,11 @@ enum Outcome {
 
 fn normalize_exchange(exchange: &mut Map<String, Value>, indexes: &Indexes) -> Outcome {
     let Some(unit_id) = string(exchange.get("unitId")) else {
-        return Outcome::NoUnitInfo;
+        return if has_measurement_selection(exchange) {
+            Outcome::Unresolved("missing_exchange_unit_identity")
+        } else {
+            Outcome::NoUnitInfo
+        };
     };
     if indexes.invalid_units.contains(unit_id) {
         return Outcome::Unresolved("duplicate_unit_identity");
@@ -264,6 +268,28 @@ fn normalize_exchange(exchange: &mut Map<String, Value>, indexes: &Indexes) -> O
     )
 }
 
+fn has_measurement_selection(exchange: &Map<String, Value>) -> bool {
+    // A property or unit label does not identify the source unit. Do not guess
+    // from the Flow reference unit or silently accept a partial source reference.
+    // Preserve the legacy path only when no measurement selection was supplied.
+    [
+        "unitId",
+        "unitName",
+        "flowPropertyRefId",
+        "flowPropertyName",
+    ]
+    .iter()
+    .any(|key| exchange.get(*key).is_some_and(|value| !value.is_null()))
+        || exchange
+            .get("sourceTrace")
+            .and_then(|trace| trace.get("exchange"))
+            .is_some_and(|source| {
+                ["unit", "flowProperty"]
+                    .iter()
+                    .any(|key| source.get(*key).is_some_and(|value| !value.is_null()))
+            })
+}
+
 fn has_absolute_normal_dispersion(exchange: &Map<String, Value>) -> bool {
     // openLCA normal sd is absolute despite the target field's relative name.
     // Its adapter may already have rounded or omitted sd*2; never silently carry
@@ -331,7 +357,7 @@ fn apply_normalized_exchange(
             "factor": scale.decimal,
             "numerator": scale.numerator,
             "denominator": scale.denominator,
-            "precision": tidas_conversion::measurement::PRECISION,
+            "precision": tidas_measurement::PRECISION,
             "rounding": "half-even",
             "sourceUnit": exchange.get("sourceUnitName").cloned().or_else(|| unit.name.clone().map(Value::String)).unwrap_or(Value::Null),
             "targetUnit": target.unit_name,
@@ -617,6 +643,60 @@ mod tests {
         })
         .unwrap();
         assert!(validation.summary.ok);
+    }
+
+    #[test]
+    fn selected_measurement_without_unit_identity_blocks_without_mutation() {
+        let indexes = build_indexes(&normalization_fixture()).unwrap();
+        for evidence in [
+            json!({"flowPropertyRefId": ENERGY_PROPERTY}),
+            json!({"flowPropertyName": "Energy"}),
+            json!({"unitName": "MJ"}),
+            json!({"unitId": ""}),
+            json!({"sourceTrace": {"exchange": {"unit": {"name": "MJ"}}}}),
+            json!({"sourceTrace": {"exchange": {"unit": {"@id": MJ}}}}),
+            json!({"sourceTrace": {"exchange": {"unit": {}}}}),
+            json!({"sourceTrace": {"exchange": {"flowProperty": {"@id": ENERGY_PROPERTY}}}}),
+        ] {
+            let mut value = Map::from_iter([
+                ("internalId".to_owned(), json!(1)),
+                ("flowRefId".to_owned(), json!(FUEL)),
+                ("amount".to_owned(), json!("100")),
+            ]);
+            value.extend(evidence.as_object().unwrap().clone());
+            let original = value.clone();
+            assert!(
+                matches!(
+                    normalize_exchange(&mut value, &indexes),
+                    Outcome::Unresolved("missing_exchange_unit_identity")
+                ),
+                "{evidence}"
+            );
+            assert_eq!(value, original);
+        }
+    }
+
+    #[test]
+    fn absence_of_measurement_metadata_keeps_existing_no_unit_behavior() {
+        let indexes = build_indexes(&normalization_fixture()).unwrap();
+        let mut value = serde_json::from_value::<Map<String, Value>>(json!({
+            "flowRefId": FUEL,
+            "amount": "100",
+            "unitId": null,
+            "unitName": null,
+            "flowPropertyRefId": null,
+            "flowPropertyName": null,
+            "sourceTrace": {"format": "openlca-jsonld", "exchange": {
+                "amount": "100", "unit": null, "flowProperty": null
+            }}
+        }))
+        .unwrap();
+        let original = value.clone();
+        assert!(matches!(
+            normalize_exchange(&mut value, &indexes),
+            Outcome::NoUnitInfo
+        ));
+        assert_eq!(value, original);
     }
 
     #[test]

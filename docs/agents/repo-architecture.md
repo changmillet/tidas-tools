@@ -27,8 +27,8 @@ checkPaths:
   - .githooks/pre-push
   - scripts/**
 lastReviewedAt: 2026-09-15
-lastReviewedCommit: "48ffc854d824c8d08987fd9491413953786b377f"
-lastReviewedNote: "Reviewed PR #192 against main #194: retain report-only Flow-property conversion, exact reference identity and normal-uncertainty gates together with native XML archive reuse and isolated Cargo package paths. No runtime schema, release, or authorization changes introduced by this merge."
+lastReviewedCommit: 88f94b92840767c0b814eb0d7fc7e78c8e94798f
+lastReviewedNote: "Reviewed PR #192 rework: isolate pure measurement in a thirteenth crate, restore package validation integration tests, preserve semantic gates and reject incomplete explicit unit selections. Qualify normal dependency boundaries and retain upstream native-cache/Cargo-target behavior; no dataset asset or public report changes."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -51,7 +51,8 @@ alternate executable or runtime fallback is part of the product.
 | `crates/tidas-cli` | unified executable, invocation context, output routing, completion, cancellation wiring, thin dispatch |
 | `crates/tidas-contracts` | stable operation reports, diagnostics, artifacts, completeness, exit classes |
 | `crates/tidas-runtime` | bounded queues, memory reservations, cancellation, deterministic spools |
-| `crates/tidas-conversion` | bidirectional TIDAS JSON/eILCD XML transformation, pure Flow-property measurement conversion, schema-ordered output and atomic publication |
+| `crates/tidas-conversion` | bidirectional TIDAS JSON/eILCD XML transformation with schema-ordered output and atomic publication |
+| `crates/tidas-measurement` | pure Flow-property semantics, bounded decimal arithmetic, exact document bindings and report-only quantity conversion |
 | `crates/tidas-import` | format detection, disk-backed canonicalization, TIDAS/ILCD publication, bundles, mapping |
 | `crates/tidas-export` | repeatable-read PostgreSQL extraction, S3-compatible streaming, deterministic ZIP |
 | `crates/tidas-validation` | offline TIDAS JSON and ILCD/XSD validation, semantic indexes, batch protocol |
@@ -101,8 +102,11 @@ credentials.
 
 Validation resolves only embedded assets. Draft 7 schema resources and ILCD
 XSD contexts are compiled offline and reused. Native TIDAS schema/semantic
-validation does not invoke package conversion; it reuses the pure
-`tidas-conversion::measurement` Flow-property semantics. The CLI's default complete
+validation remains independent of package conversion. Shared Flow-property
+inspection and arithmetic belong to the lower-level `tidas-measurement` crate,
+which has no workspace, filesystem, network or XML dependency. The CLI, import
+and native validation call it directly. Conversion retains its real package
+validation integration tests through a dev-only dependency. The CLI's default complete
 TIDAS validation composes it with actual eILCD projection, XSD validation, and
 semantic recovery. This keeps dependency direction acyclic while making a
 successful user-facing validation a convertibility guarantee. Issue details stream or are
@@ -233,3 +237,14 @@ seeding through `.github/actions/native-xml`. Reuse is limited to vcpkg binary
 archives; installed native inputs and final product/notice outputs remain fresh.
 Cache seeding owns no release, registry or attestation action. Package archive
 location comes from existing Cargo metadata, preserving portable isolated builds.
+
+## Shared measurement and dependency qualification
+
+`tidas-measurement` owns the existing versioned quantity request/report and
+side-effect-free property checks. Package conversion does not depend on native
+validation in production, and native validation does not depend on package
+conversion, including transitively. `scripts/publish-crates.sh check` rejects
+those edges and any upper-level TIDAS dependency in measurement before packing.
+Its 13-package release order includes measurement before its consumers; the
+crate carries its own contract copies and exact-number JSON feature selection.
+No dataset Schema or executable asset changes are required by this extraction.

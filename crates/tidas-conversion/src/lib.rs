@@ -1,7 +1,6 @@
 //! Bounded, deterministic TIDAS JSON and eILCD XML conversion.
 
 mod format;
-pub mod measurement;
 mod ordering;
 mod projection;
 mod transaction;
@@ -894,7 +893,7 @@ mod tests {
 
     use serde_json::{Value, json};
     use tempfile::tempdir;
-    use tidas_xml::CompiledXsd;
+    use tidas_validation::{ValidationRequest, validate_ilcd_package};
 
     use super::*;
 
@@ -1086,10 +1085,22 @@ mod tests {
         let xml = fs::read_to_string(output.join("data/flows/scrambled.xml")).unwrap();
         assert!(xml.find("flowInformation").unwrap() < xml.find("flowProperties").unwrap());
 
-        let mut validator =
-            CompiledXsd::from_path(&output.join("schemas/ILCD_FlowDataSet.xsd")).unwrap();
-        let issues = validator.validate(xml.as_bytes()).unwrap();
-        assert!(issues.is_empty(), "{issues:?}");
+        let issues = output.join("issues.jsonl");
+        let validation = validate_ilcd_package(&ValidationRequest {
+            input_dir: output.join("data"),
+            issue_spool: Some(issues.clone()),
+            cancellation: CancellationToken::default(),
+            memory_budget: MemoryBudget::new(16 * 1024 * 1024),
+            queue_capacity: 4,
+            progress: None,
+        })
+        .unwrap();
+        assert!(
+            validation.summary.ok,
+            "{:?}\n{}",
+            validation.summary,
+            fs::read_to_string(issues).unwrap()
+        );
     }
 
     #[test]
@@ -1131,10 +1142,22 @@ mod tests {
         let xml = fs::read_to_string(output.join("data/contacts/scrambled.xml")).unwrap();
         assert!(xml.find("telephone").unwrap() < xml.find("email").unwrap());
         assert!(xml.find("email").unwrap() < xml.find("WWWAddress").unwrap());
-        let mut validator =
-            CompiledXsd::from_path(&output.join("schemas/ILCD_ContactDataSet.xsd")).unwrap();
-        let issues = validator.validate(xml.as_bytes()).unwrap();
-        assert!(issues.is_empty(), "{issues:?}");
+        let issues = output.join("issues.jsonl");
+        let validation = validate_ilcd_package(&ValidationRequest {
+            input_dir: output.join("data"),
+            issue_spool: Some(issues.clone()),
+            cancellation: CancellationToken::default(),
+            memory_budget: MemoryBudget::new(16 * 1024 * 1024),
+            queue_capacity: 4,
+            progress: None,
+        })
+        .unwrap();
+        assert!(
+            validation.summary.ok,
+            "{:?}\n{}",
+            validation.summary,
+            fs::read_to_string(issues).unwrap()
+        );
     }
 
     #[test]
