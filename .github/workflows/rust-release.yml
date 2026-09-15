@@ -15,7 +15,18 @@ on:
       - scripts/publish-crates.sh
       - scripts/sync-rust-package-assets.sh
       - .github/workflows/rust-release.yml
+      - .github/actions/native-xml/**
+      - scripts/native-cache-contract.sh
+      - scripts/test-native-cache.sh
+      - scripts/test-publish-target.sh
   push:
+    branches: [main]
+    paths:
+      - packaging/vcpkg/**
+      - .github/actions/native-xml/**
+      - scripts/native-cache-contract.sh
+      - scripts/test-native-cache.sh
+      - .github/workflows/rust-release.yml
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+"
       - "v[0-9]+.[0-9]+.[0-9]+-*"
@@ -30,6 +41,7 @@ env:
 
 jobs:
   package-crates:
+    if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/')
     name: Qualify crates.io release set
     runs-on: ubuntu-24.04
     permissions:
@@ -47,10 +59,14 @@ jobs:
       - name: Audit Rust-only active tree
         run: ./scripts/audit-rust-only.sh
 
+      - name: Test configured Cargo target qualification
+        run: bash scripts/test-publish-target.sh
+
       - name: Package and dry-run the complete public workspace
         run: ./scripts/publish-crates.sh check
 
   build:
+    if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/')
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.runner }}
     permissions:
@@ -99,47 +115,11 @@ jobs:
           key: native-release-${{ matrix.target }}
 
       - name: Install pinned native XML dependencies
-        if: matrix.family != 'windows'
-        shell: bash
-        env:
-          TRIPLET: ${{ matrix.vcpkg-triplet }}
-        run: |
-          if [ "${{ matrix.family }}" = "linux" ]; then
-            sudo apt-get update
-            sudo apt-get install --yes pkg-config
-          else
-            brew install pkg-config
-          fi
-          git clone --filter=blob:none https://github.com/microsoft/vcpkg.git "$RUNNER_TEMP/vcpkg"
-          git -C "$RUNNER_TEMP/vcpkg" checkout "$VCPKG_COMMIT"
-          "$RUNNER_TEMP/vcpkg/bootstrap-vcpkg.sh" -disableMetrics
-          "$RUNNER_TEMP/vcpkg/vcpkg" install \
-            --triplet "$TRIPLET" \
-            --x-manifest-root="$GITHUB_WORKSPACE/packaging/vcpkg" \
-            --x-install-root="$RUNNER_TEMP/vcpkg/installed"
-          {
-            echo "PKG_CONFIG_PATH=$RUNNER_TEMP/vcpkg/installed/$TRIPLET/lib/pkgconfig"
-            echo "LIBXML2_STATIC=1"
-            echo "LIBXSLT_STATIC=1"
-          } >> "$GITHUB_ENV"
-
-      - name: Install pinned native XML dependencies
-        if: matrix.family == 'windows'
-        shell: pwsh
-        env:
-          TRIPLET: ${{ matrix.vcpkg-triplet }}
-        run: |
-          git clone --filter=blob:none https://github.com/microsoft/vcpkg.git "$env:RUNNER_TEMP\vcpkg"
-          git -C "$env:RUNNER_TEMP\vcpkg" checkout $env:VCPKG_COMMIT
-          & "$env:RUNNER_TEMP\vcpkg\bootstrap-vcpkg.bat" -disableMetrics
-          & "$env:RUNNER_TEMP\vcpkg\vcpkg.exe" install `
-            --triplet $env:TRIPLET `
-            --x-manifest-root="$env:GITHUB_WORKSPACE\packaging\vcpkg" `
-            --x-install-root="$env:RUNNER_TEMP\vcpkg\installed"
-          "VCPKG_ROOT=$env:RUNNER_TEMP\vcpkg" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "VCPKGRS_TRIPLET=$env:TRIPLET" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "CARGO_BUILD_TARGET=x86_64-pc-windows-msvc" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS=-C target-feature=+crt-static" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        uses: ./.github/actions/native-xml
+        with:
+          family: ${{ matrix.family }}
+          triplet: ${{ matrix.vcpkg-triplet }}
+          baseline: ${{ env.VCPKG_COMMIT }}
 
       - name: Build exact native binary
         shell: bash
@@ -294,6 +274,36 @@ jobs:
           path: dist/upload/*
           if-no-files-found: error
           retention-days: 14
+
+  seed-native-cache:
+    name: Seed native archives (${{ matrix.triplet }})
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            family: linux
+            triplet: x64-linux
+          - runner: ubuntu-24.04-arm
+            family: linux
+            triplet: arm64-linux
+          - runner: macos-15
+            family: macos
+            triplet: arm64-osx
+          - runner: windows-2025
+            family: windows
+            triplet: x64-windows-static
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: ./.github/actions/native-xml
+        with:
+          family: ${{ matrix.family }}
+          triplet: ${{ matrix.triplet }}
+          baseline: ${{ env.VCPKG_COMMIT }}
 
   aggregate:
     name: Aggregate release set

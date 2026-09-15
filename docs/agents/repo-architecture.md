@@ -23,11 +23,12 @@ checkPaths:
   - packaging/**
   - migration/**
   - .github/workflows/**
+  - .github/actions/native-xml/**
   - .githooks/pre-push
   - scripts/**
 lastReviewedAt: 2026-09-15
-lastReviewedCommit: 6317741
-lastReviewedNote: "Reviewed local normal-uncertainty gate: non-unit openLCA conversions block retained absolute normal dispersion before mutation; factor-one identity and log-normal dispersion remain supported. No request, asset, dependency, release, or provider semantics change."
+lastReviewedCommit: "48ffc854d824c8d08987fd9491413953786b377f"
+lastReviewedNote: "Reviewed PR #192 against main #194: retain report-only Flow-property conversion, exact reference identity and normal-uncertainty gates together with native XML archive reuse and isolated Cargo package paths. No runtime schema, release, or authorization changes introduced by this merge."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -226,3 +227,9 @@ provider equivalence engine, or Elementary Flow/CF asset change is introduced.
 Conversion's XSD test proof calls `tidas-xml::CompiledXsd` directly. It does not
 depend on the validation crate, preserving an acyclic package/release graph when
 validation consumes the shared pure measurement semantics.
+
+Native dependency setup is shared by package qualification and default-branch cache
+seeding through `.github/actions/native-xml`. Reuse is limited to vcpkg binary
+archives; installed native inputs and final product/notice outputs remain fresh.
+Cache seeding owns no release, registry or attestation action. Package archive
+location comes from existing Cargo metadata, preserving portable isolated builds.

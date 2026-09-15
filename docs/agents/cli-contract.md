@@ -27,8 +27,8 @@ checkPaths:
   - README.md
   - README_CN.md
 lastReviewedAt: 2026-09-15
-lastReviewedCommit: 6317741
-lastReviewedNote: "Reviewed local normal-uncertainty gate: non-unit openLCA conversions block retained absolute normal dispersion before mutation; factor-one identity and log-normal dispersion remain supported. No request, asset, dependency, release, or provider semantics change."
+lastReviewedCommit: "48ffc854d824c8d08987fd9491413953786b377f"
+lastReviewedNote: "Reviewed PR #192 against main #194: retain report-only Flow-property conversion, exact reference identity and normal-uncertainty gates together with native XML archive reuse and isolated Cargo package paths. No runtime schema, release, or authorization changes introduced by this merge."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

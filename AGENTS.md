@@ -28,10 +28,11 @@ checkPaths:
   - docs/agents/**
   - scripts/**
   - .github/workflows/**
+  - .github/actions/native-xml/**
   - .githooks/pre-push
 lastReviewedAt: 2026-09-15
-lastReviewedCommit: 6317741
-lastReviewedNote: "Reviewed local normal-uncertainty gate: non-unit openLCA conversions block retained absolute normal dispersion before mutation; factor-one identity and log-normal dispersion remain supported. No request, asset, dependency, release, or provider semantics change."
+lastReviewedCommit: "48ffc854d824c8d08987fd9491413953786b377f"
+lastReviewedNote: "Reviewed PR #192 against main #194: retain report-only Flow-property conversion, exact reference identity and normal-uncertainty gates together with native XML archive reuse and isolated Cargo package paths. No runtime schema, release, or authorization changes introduced by this merge."
 related:
   - .docpact/config.yaml
   - docs/agents/repo-architecture.md
@@ -191,3 +192,10 @@ Install the versioned hook once per checkout:
 The pre-push hook runs strict Docpact, the Rust-only repository audit, both
 asset locks, formatting, clippy, and the complete workspace test suite. The
 Docpact wrapper resolves the CLI without requiring bare `docpact` on `PATH`.
+
+
+Native CI caching may reuse vcpkg binary archives but must still perform the pinned
+checkout/bootstrap/install and every native qualification gate. Default-branch cache
+seeding is setup only and cannot publish or attest a product. Follow the cache and
+isolated Cargo output regressions in `docs/agents/repo-validation.md` when editing
+these harnesses; package locations follow Cargo metadata instead of a fixed directory.

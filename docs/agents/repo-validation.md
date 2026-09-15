@@ -24,11 +24,12 @@ checkPaths:
   - packaging/**
   - migration/**
   - .github/workflows/**
+  - .github/actions/native-xml/**
   - .githooks/pre-push
   - scripts/**
 lastReviewedAt: 2026-09-15
-lastReviewedCommit: 6317741
-lastReviewedNote: "Reviewed local normal-uncertainty gate: non-unit openLCA conversions block retained absolute normal dispersion before mutation; factor-one identity and log-normal dispersion remain supported. No request, asset, dependency, release, or provider semantics change."
+lastReviewedCommit: "48ffc854d824c8d08987fd9491413953786b377f"
+lastReviewedNote: "Reviewed PR #192 against main #194: retain report-only Flow-property conversion, exact reference identity and normal-uncertainty gates together with native XML archive reuse and isolated Cargo package paths. No runtime schema, release, or authorization changes introduced by this merge."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -171,3 +172,73 @@ objects. Its original package is now asserted to fail before publication. The
 parity test adds an explicit unit/property chain only to a temporary derived
 fixture, then checks the unchanged historical oracle's other semantic assertions.
 The frozen source and expected-result files remain unchanged.
+
+## Native CI archive reuse and isolated Cargo outputs
+
+For native-cache or package-gate changes, also run `bash scripts/test-native-cache.sh`,
+`bash scripts/test-publish-target.sh`, shell syntax checks and actionlint on the
+changed workflows before pushing. Cache identity regressions cover missing inputs,
+image/platform/triplet/baseline/input-hash changes and required installation outcomes.
+Package regressions cover default and configured output paths (including spaces),
+stale default archives and one metadata query. The packaging gate uses Cargo's
+reported `target_directory`, so isolated `CARGO_TARGET_DIR` or Cargo configuration
+does not cause a false missing-archive failure after successful packaging.
+
+The native XML action restores only vcpkg compressed binary archives. It creates a
+fresh vcpkg checkout and installed tree and runs bootstrap/install every time. Only
+cache transport is optional; skipped or failed native installation fails the final
+action verifier. Windows checks each native command's exit code. Existing static
+imports, source-bound notices, repeatable archive bytes, checksums, smoke and the
+complete four-platform qualification remain mandatory. A cache hit is not a
+qualification receipt.
+
+Outer keys bind the hosted image/platform, triplet, pinned vcpkg baseline and the
+manifest/action/key implementation bytes. vcpkg retains its own ABI selection.
+Main pushes affecting native-cache inputs seed default-branch archives through the
+same action, without running product release or attestation jobs. PRs, tags and
+manual dispatch retain their existing full native qualification behavior; publication
+remains tag-only. GitHub does not evaluate path filters for tag pushes, so the
+main seed path filter does not narrow version-tag qualification. RustCI dependency
+selection is unchanged.
+
+Compare actual cold/warm runs at matching keys/images: installation time, cache
+restore/save, whole jobs and all gate outcomes. Count the default-branch seed and
+cache storage as costs. Historical Windows steps (442s native release, 405s RustCI)
+are context, not measured savings. See the hosted evidence below for current qualification status.
+
+References: [Cargo metadata output](https://doc.rust-lang.org/cargo/commands/cargo-metadata.html),
+[vcpkg archive cache](https://learn.microsoft.com/en-us/vcpkg/consume/binary-caching-default)
+and [binary cache providers](https://learn.microsoft.com/en-us/vcpkg/reference/binarycaching).
+The added cache action uses verified stable v6.1.0 pinned to its full executable SHA.
+
+Local #193 evidence: the unchanged source baseline passed audit, assets, formatting,
+clippy, workspace tests and sync; its package gate exposed the configured-target bug.
+After the fix, all seven canonical gates passed in an isolated target directory,
+including actual package/dry-run/checksum qualification (58.694s). These local
+results are not a native CI speedup claim. Workflow actionlint also
+passes; the separate hosted evidence below owns native runtime and cache results.
+
+
+### Native cache cold baseline, 2026-09-15
+
+[Run 34935796586, attempt 1](https://github.com/tiangong-lca/tidas-toolkit/actions/runs/34935796586)
+at `37ce8602fb8aec00fd182f8e2976f7911ff783c4` passed all four native
+jobs, package dry-run, complete-set aggregation and Winget validation. Main-only
+seeding and tag-only publication were skipped. Each native archive lookup missed
+and each completed job saved its key. Composite contexts, image identities,
+installation and mandatory-outcome checks executed successfully on all four hosts.
+
+| Platform | Native action (seconds) | Job (seconds) | Native cache save (seconds) |
+| --- | ---: | ---: | ---: |
+| Linux x64 | 50 | 271 | 1 |
+| Linux ARM64 | 50 | 230 | 2 |
+| macOS ARM64 | 62 | 407 | 1 |
+| Windows x64 | 411 | 902 | 2 |
+
+The native-action interval includes key tests, cache lookup, checkout/bootstrap,
+installation and outcome verification. A documentation-only follow-up retains the
+same native inputs for warm comparison. Existing Rust target caching can also
+warm independently; do not attribute the entire job delta solely to this new
+archive cache. Compare actual keys/images, restored-package logs, archive size,
+transfer overhead and all qualification results. Synthetic skipped jobs are not
+timing samples. Default-branch seeding is still pending delivery.
