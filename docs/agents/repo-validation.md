@@ -26,8 +26,8 @@ checkPaths:
   - .github/workflows/**
   - .githooks/pre-push
   - scripts/**
-lastReviewedAt: 2026-09-13
-lastReviewedCommit: "5bf38f9d5870ed548376e338a83bf3e116df66bf"
+lastReviewedAt: 2026-09-15
+lastReviewedCommit: 6317741
 lastReviewedNote: "Reviewed local normal-uncertainty gate: non-unit openLCA conversions block retained absolute normal dispersion before mutation; factor-one identity and log-normal dispersion remain supported. No request, asset, dependency, release, or provider semantics change."
 related:
   - ../../AGENTS.md

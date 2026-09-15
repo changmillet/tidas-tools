@@ -1,8 +1,8 @@
 version: 1
 layout: repo
 # Review note, 2026-09-07: #187 adds the immutable v0.3.0 request for exact bbccee6; source, runtime, platform and ownership invariants are unchanged.
-lastReviewedAt: "2026-09-13"
-lastReviewedCommit: "5bf38f9d5870ed548376e338a83bf3e116df66bf"
+lastReviewedAt: "2026-09-15"
+lastReviewedCommit: "6317741"
 lastReviewedNote: "Reviewed local normal-uncertainty gate: non-unit openLCA conversions block retained absolute normal dispersion before mutation; factor-one identity and log-normal dispersion remain supported. No request, asset, dependency, release, or provider semantics change."
 # Reviewed for Issue #177: macOS Intel is retired from the required native
 # matrix; Linux x86_64/ARM64, macOS Apple Silicon, and Windows x86_64 remain,
