@@ -27,8 +27,8 @@ checkPaths:
   - README.md
   - README_CN.md
 lastReviewedAt: 2026-09-15
-lastReviewedCommit: 71ab97b5f75058177820cbce933114b63a617b9b
-lastReviewedNote: "Reviewed for toolkit #193: archive-only native cache and seed preserve four-platform package/static/notice gates and tag-only publication; Cargo metadata resolves isolated package output. Shell negative regressions, actionlint and all seven real local gates pass. Hosted composite/native cold-warm CI remains pending; public CLI and runtime are unchanged."
+lastReviewedCommit: 37ce8602fb8aec00fd182f8e2976f7911ff783c4
+lastReviewedNote: "Reviewed for #193 after cold CI34935796586: four native platforms, package dry-run, aggregation and Winget pass; composite installation/context and cache saves are verified. Native action50/50/62/411s; warm comparison and root integration remain pending. Runtime/CLI/authorization unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
