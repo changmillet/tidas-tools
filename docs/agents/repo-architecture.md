@@ -23,11 +23,12 @@ checkPaths:
   - packaging/**
   - migration/**
   - .github/workflows/**
+  - .github/actions/native-xml/**
   - .githooks/pre-push
   - scripts/**
-lastReviewedAt: 2026-09-13
-lastReviewedCommit: e237a6cf1d4c55ba490719a8fcee0f659d1f840c
-lastReviewedNote: "Reviewed for toolkit #189: canonical dispatch, installers and package metadata use tidas-toolkit/tidas-sdks. The v1 notice reader preserves the historical namespace through 0.3.0 without changing provenance authority, asset locks, release requests or CLI behavior."
+lastReviewedAt: 2026-09-15
+lastReviewedCommit: 37ce8602fb8aec00fd182f8e2976f7911ff783c4
+lastReviewedNote: "Reviewed for #193 after cold CI34935796586: four native platforms, package dry-run, aggregation and Winget pass; composite installation/context and cache saves are verified. Native action50/50/62/411s; warm comparison and root integration remain pending. Runtime/CLI/authorization unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -207,3 +208,10 @@ updated separately when the tracked delivery requires it.
 The versioned pre-push hook runs strict Docpact, the Rust-only audit, paired and
 full asset locks, formatting, clippy, and workspace tests. See
 `docs/agents/repo-validation.md` for focused and scale proof.
+
+
+Native dependency setup is shared by package qualification and default-branch cache
+seeding through `.github/actions/native-xml`. Reuse is limited to vcpkg binary
+archives; installed native inputs and final product/notice outputs remain fresh.
+Cache seeding owns no release, registry or attestation action. Package archive
+location comes from existing Cargo metadata, preserving portable isolated builds.

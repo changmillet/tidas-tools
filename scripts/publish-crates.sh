@@ -40,6 +40,7 @@ run_cargo() {
 }
 
 metadata="$(cargo metadata --locked --format-version 1 --no-deps)"
+target_directory="$(jq -er '.target_directory | strings | select(length > 0)' <<<"$metadata")"
 version="$(jq -r '.packages[] | select(.name == "tidas") | .version' <<<"$metadata")"
 if [[ -z "$version" || "$version" == "null" ]]; then
   echo "could not resolve the public tidas package version" >&2
@@ -61,7 +62,7 @@ fi
 
 crate_file() {
   local package="$1"
-  printf '%s/target/package/%s-%s.crate' "$repo_root" "$package" "$version"
+  printf '%s/package/%s-%s.crate' "$target_directory" "$package" "$version"
 }
 
 sha256_file() {

@@ -28,10 +28,11 @@ checkPaths:
   - docs/agents/**
   - scripts/**
   - .github/workflows/**
+  - .github/actions/native-xml/**
   - .githooks/pre-push
-lastReviewedAt: 2026-09-13
-lastReviewedCommit: e237a6cf1d4c55ba490719a8fcee0f659d1f840c
-lastReviewedNote: "Reviewed for toolkit #189: canonical dispatch, installers and package metadata use tidas-toolkit/tidas-sdks. The v1 notice reader preserves the historical namespace through 0.3.0 without changing provenance authority, asset locks, release requests or CLI behavior."
+lastReviewedAt: 2026-09-15
+lastReviewedCommit: 37ce8602fb8aec00fd182f8e2976f7911ff783c4
+lastReviewedNote: "Reviewed for #193 after cold CI34935796586: four native platforms, package dry-run, aggregation and Winget pass; composite installation/context and cache saves are verified. Native action50/50/62/411s; warm comparison and root integration remain pending. Runtime/CLI/authorization unchanged."
 related:
   - .docpact/config.yaml
   - docs/agents/repo-architecture.md
@@ -191,3 +192,10 @@ Install the versioned hook once per checkout:
 The pre-push hook runs strict Docpact, the Rust-only repository audit, both
 asset locks, formatting, clippy, and the complete workspace test suite. The
 Docpact wrapper resolves the CLI without requiring bare `docpact` on `PATH`.
+
+
+Native CI caching may reuse vcpkg binary archives but must still perform the pinned
+checkout/bootstrap/install and every native qualification gate. Default-branch cache
+seeding is setup only and cannot publish or attest a product. Follow the cache and
+isolated Cargo output regressions in `docs/agents/repo-validation.md` when editing
+these harnesses; package locations follow Cargo metadata instead of a fixed directory.

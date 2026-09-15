@@ -26,9 +26,9 @@ checkPaths:
   - contracts/**
   - README.md
   - README_CN.md
-lastReviewedAt: 2026-09-13
-lastReviewedCommit: e237a6cf1d4c55ba490719a8fcee0f659d1f840c
-lastReviewedNote: "Reviewed for toolkit #189: canonical dispatch, installers and package metadata use tidas-toolkit/tidas-sdks. The v1 notice reader preserves the historical namespace through 0.3.0 without changing provenance authority, asset locks, release requests or CLI behavior."
+lastReviewedAt: 2026-09-15
+lastReviewedCommit: 37ce8602fb8aec00fd182f8e2976f7911ff783c4
+lastReviewedNote: "Reviewed for #193 after cold CI34935796586: four native platforms, package dry-run, aggregation and Winget pass; composite installation/context and cache saves are verified. Native action50/50/62/411s; warm comparison and root integration remain pending. Runtime/CLI/authorization unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

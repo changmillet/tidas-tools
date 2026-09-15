@@ -1,9 +1,9 @@
 version: 1
 layout: repo
 # Review note, 2026-09-07: #187 adds the immutable v0.3.0 request for exact bbccee6; source, runtime, platform and ownership invariants are unchanged.
-lastReviewedAt: 2026-09-13
-lastReviewedCommit: e237a6cf1d4c55ba490719a8fcee0f659d1f840c
-lastReviewedNote: "Reviewed for toolkit #189: canonical dispatch, installers and package metadata use tidas-toolkit/tidas-sdks. The v1 notice reader preserves the historical namespace through 0.3.0 without changing provenance authority, asset locks, release requests or CLI behavior."
+lastReviewedAt: "2026-09-15"
+lastReviewedCommit: "37ce8602fb8aec00fd182f8e2976f7911ff783c4"
+lastReviewedNote: "Reviewed for #193 after cold CI34935796586: four native platforms, package dry-run, aggregation and Winget pass; composite installation/context and cache saves are verified. Native action50/50/62/411s; warm comparison and root integration remain pending. Runtime/CLI/authorization unchanged."
 # Reviewed for Issue #177: macOS Intel is retired from the required native
 # matrix; Linux x86_64/ARM64, macOS Apple Silicon, and Windows x86_64 remain,
 # and ownership/routing/validation governance is otherwise unchanged.
@@ -63,6 +63,10 @@ ownership:
           - scripts/validate-final-python-line.sh
           - .github/workflows/release-request.yml
           - .github/workflows/rust-release.yml
+          - .github/actions/native-xml/**
+          - scripts/native-cache-contract.sh
+          - scripts/test-native-cache.sh
+          - scripts/test-publish-target.sh
       ownerRepo: tidas-tools
     - id: tests-and-automation
       paths:
@@ -92,6 +96,7 @@ coverage:
     - .githooks/**
     - .github/releases/**
     - .github/workflows/**
+    - .github/actions/native-xml/**
     - docs/agents/**
     - migration/**
     - packaging/**
@@ -205,6 +210,10 @@ routing:
         - scripts/validate-final-python-line.sh
         - .github/workflows/release-request.yml
         - .github/workflows/rust-release.yml
+        - .github/actions/native-xml/**
+        - scripts/native-cache-contract.sh
+        - scripts/test-native-cache.sh
+        - scripts/test-publish-target.sh
     proof:
       paths:
         - docs/agents/repo-validation.md
@@ -338,6 +347,8 @@ rules:
         kind: automation
       - path: .github/workflows/**
         kind: automation
+      - path: .github/actions/native-xml/**
+        kind: native-dependency-automation
       - path: .githooks/**
         kind: local-gate
       - path: packaging/**
