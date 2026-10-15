@@ -28,12 +28,13 @@ checkPaths:
   - migration/**
   - docs/agents/**
   - scripts/**
+  - .github/dependabot.yml
   - .github/workflows/**
   - .github/actions/native-xml/**
   - .githooks/pre-push
-lastReviewedAt: 2026-10-07
-lastReviewedCommit: 0f14b48c70a56ecf6a6c036930585a18a2e8728f
-lastReviewedNote: "Reviewed Toolkit #242 append-only 0.3.4 release request bound to the exact qualified source merge. Native/crate publication and downstream qualification remain pending; executable release contracts are unchanged."
+lastReviewedAt: 2026-10-16
+lastReviewedCommit: 767b4721cc7b7ae899942451f12fe2f69f73dd55
+lastReviewedNote: "Reviewed Toolkit #246 Dependabot Cargo/Actions pilot: dependency PRs retain existing product, native, release and exact-source qualification; public CLI behavior is unchanged."
 related:
   - .docpact/config.yaml
   - docs/agents/repo-architecture.md

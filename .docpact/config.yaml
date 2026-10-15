@@ -1,9 +1,9 @@
 version: 1
 layout: repo
 # Review note, 2026-09-07: #187 adds the immutable v0.3.0 request for exact bbccee6; source, runtime, platform and ownership invariants are unchanged.
-lastReviewedAt: "2026-10-07"
-lastReviewedCommit: 0f14b48c70a56ecf6a6c036930585a18a2e8728f
-lastReviewedNote: "Reviewed Toolkit #242 append-only 0.3.4 release request bound to the exact qualified source merge. Native/crate publication and downstream qualification remain pending; executable release contracts are unchanged."
+lastReviewedAt: "2026-10-16"
+lastReviewedCommit: "767b4721cc7b7ae899942451f12fe2f69f73dd55"
+lastReviewedNote: "Reviewed Toolkit #246 Dependabot Cargo/Actions pilot: dependency PRs retain existing product, native, release and exact-source qualification; public CLI behavior is unchanged."
 # Reviewed for Issue #177: macOS Intel is retired from the required native
 # matrix; Linux x86_64/ARM64, macOS Apple Silicon, and Windows x86_64 remain,
 # and ownership/routing/validation governance is otherwise unchanged.
@@ -84,6 +84,7 @@ ownership:
     - id: tests-and-automation
       paths:
         include:
+          - .github/dependabot.yml
           - test_data/**
           - scripts/audit-rust-only.sh
           - .github/workflows/rust-ci.yml
@@ -109,6 +110,7 @@ coverage:
     - .gitattributes
     - .docpact/config.yaml
     - .githooks/**
+    - .github/dependabot.yml
     - .github/releases/**
     - .github/workflows/**
     - .github/actions/native-xml/**
@@ -361,6 +363,16 @@ rules:
       - path: docs/agents/repo-architecture.md
         mode: review_or_update
     reason: Executable schemas, indexes, XSD, and XSLT require paired and full lock proof.
+  - id: tidas-tools-dependency-maintenance
+    scope: repo
+    repo: tidas-tools
+    triggers:
+      - path: .github/dependabot.yml
+        kind: dependency-automation
+    requiredDocs:
+      - path: docs/agents/repo-validation.md
+        mode: review_or_update
+    reason: Dependency scheduling and grouping must preserve the maintainer review and qualification path.
   - id: tidas-tools-automation-contract
     scope: repo
     repo: tidas-tools
