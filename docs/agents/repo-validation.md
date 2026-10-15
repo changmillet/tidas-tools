@@ -24,13 +24,14 @@ checkPaths:
   - assets/**
   - packaging/**
   - migration/**
+  - .github/dependabot.yml
   - .github/workflows/**
   - .github/actions/native-xml/**
   - .githooks/pre-push
   - scripts/**
-lastReviewedAt: 2026-10-07
-lastReviewedCommit: 0f14b48c70a56ecf6a6c036930585a18a2e8728f
-lastReviewedNote: "Reviewed Toolkit #242 append-only 0.3.4 release request bound to the exact qualified source merge. Native/crate publication and downstream qualification remain pending; executable release contracts are unchanged."
+lastReviewedAt: 2026-10-16
+lastReviewedCommit: 767b4721cc7b7ae899942451f12fe2f69f73dd55
+lastReviewedNote: "Reviewed Toolkit #246 Dependabot Cargo/Actions pilot: dependency PRs retain existing product, native, release and exact-source qualification; public CLI behavior is unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -88,6 +89,16 @@ The corrected artifact must remove that dependency rather than require a user
 to install a redistributable or copy a development-machine DLL.
 
 ## Validation matrix
+
+Dependency maintenance is configured in `.github/dependabot.yml` for the root
+Cargo workspace and GitHub Actions. Updates enter reviewed PRs and keep the
+existing product and native qualification gates. Cargo minor/patch updates are
+grouped; major updates remain separate review candidates. Configuration changes
+need YAML/schema validation and strict Docpact checks. Cargo updates need the
+baseline above; Actions updates need the affected workflow's validation and
+qualification. Local push hooks do not run for bot-created PRs, so maintainers
+must verify the required evidence before merge. vcpkg, the Rust toolchain, and
+source-bound specification assets retain their explicit qualification paths.
 
 | Change | Minimum local proof | Higher-risk proof |
 | --- | --- | --- |
