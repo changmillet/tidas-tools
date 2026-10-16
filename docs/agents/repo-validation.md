@@ -30,8 +30,8 @@ checkPaths:
   - .githooks/pre-push
   - scripts/**
 lastReviewedAt: 2026-10-16
-lastReviewedCommit: 767b4721cc7b7ae899942451f12fe2f69f73dd55
-lastReviewedNote: "Reviewed Toolkit #246 Dependabot Cargo/Actions pilot: dependency PRs retain existing product, native, release and exact-source qualification; public CLI behavior is unchanged."
+lastReviewedCommit: 703dd262b205b847f21d618aacc4ea06e5c5b347
+lastReviewedNote: "Reviewed Toolkit #247 supported vcpkg discovery and exact clean maintenance-range gate; public CLI/runtime/native pins, complete product fallback gates and qualification boundaries remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -44,7 +44,8 @@ related:
 
 ## Default baseline
 
-Run this for every non-documentation change:
+Run this for every product, native, workflow or gate-code change (the narrow
+monitoring-only exception is documented below):
 
 ```bash
 scripts/audit-rust-only.sh
@@ -91,14 +92,17 @@ to install a redistributable or copy a development-machine DLL.
 ## Validation matrix
 
 Dependency maintenance is configured in `.github/dependabot.yml` for the root
-Cargo workspace and GitHub Actions. Updates enter reviewed PRs and keep the
+Cargo workspace, GitHub Actions and `packaging/vcpkg` built-in baseline.
+See [dependency maintenance](../dependency-maintenance.md) for supported formats,
+raw-pin ownership and exact-range maintenance scope. Updates enter reviewed PRs and keep the
 existing product and native qualification gates. Cargo minor/patch updates are
 grouped; major updates remain separate review candidates. Configuration changes
 need YAML/schema validation and strict Docpact checks. Cargo updates need the
 baseline above; Actions updates need the affected workflow's validation and
 qualification. Local push hooks do not run for bot-created PRs, so maintainers
-must verify the required evidence before merge. vcpkg, the Rust toolchain, and
-source-bound specification assets retain their explicit qualification paths.
+must verify the required evidence before merge. A vcpkg proposal retains coupled
+manifest/workflow checkout pins and the complete native qualification; the Rust
+toolchain and source-bound specification assets retain manual exact qualification.
 
 | Change | Minimum local proof | Higher-risk proof |
 | --- | --- | --- |
@@ -182,11 +186,17 @@ native packaging or publication has completed.
 The hook first classifies the complete pre-push input with
 `scripts/pre-push-deletion-only.sh`. A push that only deletes existing branch
 refs delivers no source, so it exits without running source validation. Every
-other input — code or tag publication, branch creation, mixed, empty, manual,
-malformed, truncated, unknown object-id length or invalid ref input — keeps the
-full gate below unchanged. The classifier is a property of the input alone; no
-environment variable selects the fast path. Regression coverage lives in
-`scripts/test-pre-push.sh`.
+other input is preserved for exact maintenance classification. Only one clean
+known existing-branch update whose complete wire and cumulative canonical-Main
+ranges modify the
+existing regular monitoring config/guide may run Docpact alone on that exact
+wire range. Hidden index flags and missing/diverged/ambiguous canonical tracking
+context keep the full gate. The helper rechecks candidate state after Docpact. All code/tag/new
+branch, mixed, empty/manual, malformed, unknown, dirty and non-allowlisted paths
+keep the full gate below unchanged, including all Cargo/native/assets/workflow
+and gate-code edits. No environment variable selects this exception. Regression
+coverage lives in `scripts/test-pre-push.sh`; supported scope and measured cost
+are in `docs/dependency-maintenance.md`.
 
 The hook runs strict Docpact, the Rust-only audit, both asset locks, format,
 clippy, and all workspace tests. Override an unusual comparison only with an

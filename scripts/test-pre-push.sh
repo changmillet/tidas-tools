@@ -13,6 +13,7 @@ done
 root="$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)"
 hook_src="$root/.githooks/pre-push"
 helper_src="$root/scripts/pre-push-deletion-only.sh"
+maintenance_src="$root/scripts/pre-push-maintenance-only.sh"
 
 fixture="$(mktemp -d)"
 cleanup() { rm -rf "$fixture"; }
@@ -22,7 +23,8 @@ repo="$fixture/repo"
 mkdir -p "$repo/.githooks" "$repo/scripts" "$fixture/bin"
 cp "$hook_src" "$repo/.githooks/pre-push"
 cp "$helper_src" "$repo/scripts/pre-push-deletion-only.sh"
-chmod +x "$repo/.githooks/pre-push" "$repo/scripts/pre-push-deletion-only.sh"
+cp "$maintenance_src" "$repo/scripts/pre-push-maintenance-only.sh"
+chmod +x "$repo/.githooks/pre-push" "$repo/scripts/pre-push-deletion-only.sh" "$repo/scripts/pre-push-maintenance-only.sh"
 
 trace="$fixture/trace"
 
@@ -34,6 +36,7 @@ cat > "$repo/scripts/docpact-gate.sh" <<'STUB'
   for argument do printf '|%s' "$argument"; done
   printf '\n'
 } >> "$FIXTURE_TRACE"
+if [ "${FIXTURE_EDIT_DURING_DOCPACT:-}" = 1 ]; then printf drift >> tracked.txt; fi
 exit "${FIXTURE_DOCPACT_EXIT:-0}"
 STUB
 cat > "$repo/scripts/audit-rust-only.sh" <<'STUB'
@@ -264,6 +267,219 @@ chmod +x "$repo/scripts/pre-push-deletion-only.sh"
 expect_gate "failing classifier falls back to the complete ordered gate" "$fixture/pure-delete"
 mv "$fixture/classifier-original" "$repo/scripts/pre-push-deletion-only.sh"
 
+# --- maintenance ranges use real commits and the actual complete hook -------
+# Track all fixture helpers so cleanliness checks are real, not stubbed Git.
+(
+  cd "$repo"
+  mkdir -p .github docs
+  printf 'version: 2\nupdates: []\n' > .github/dependabot.yml
+  printf '# Dependency maintenance\n' > docs/dependency-maintenance.md
+  git add .
+  git commit -qm 'fixture maintenance base'
+  git checkout -qb maintenance-fixture
+)
+maintenance_ref=refs/heads/maintenance-fixture
+maintenance_base="$(git -C "$repo" rev-parse HEAD)"
+git -C "$repo" update-ref refs/remotes/origin/main "$maintenance_base"
+
+maintenance_reset() { git -C "$repo" reset --hard -q "$maintenance_base"; git -C "$repo" clean -fdq; }
+maintenance_commit() {
+  git -C "$repo" add -A
+  git -C "$repo" commit -qm 'fixture candidate'
+  maintenance_head="$(git -C "$repo" rev-parse HEAD)"
+  printf '%s %s %s %s\n' "$maintenance_ref" "$maintenance_head" "$maintenance_ref" "$maintenance_base" > "$fixture/maintenance-wire"
+}
+expect_maintenance() { # name, optional env
+  run_hook "$fixture/maintenance-wire" "${2:-}"
+  printf 'docpact-gate|6|%s|%s|--base|%s|--head|%s\n' "$remote_name" "$remote_path" "$maintenance_base" "$maintenance_head" > "$fixture/expected"
+  if [ "$hook_rc" -eq 0 ] && cmp -s "$fixture/expected" "$trace"; then
+    pass "$1"
+  else
+    fail "$1" "exact candidate Docpact-only trace or exit differs (exit=$hook_rc)"
+    cat "$fixture/out" >&2
+  fi
+}
+
+printf '# changed\n' >> "$repo/.github/dependabot.yml"
+maintenance_commit
+expect_maintenance 'known clean monitor-only update uses exact wire range'
+expect_maintenance 'ambient Docpact comparison cannot replace exact wire range' 'DOCPACT_BASE_REF=unrelated'
+maintenance_reset
+printf 'Reviewed\n' >> "$repo/docs/dependency-maintenance.md"
+maintenance_commit
+expect_maintenance 'focused guide-only update uses exact wire range'
+printf '# paired config\n' >> "$repo/.github/dependabot.yml"
+maintenance_commit
+expect_maintenance 'both allowed paths across all candidate commits remain maintenance-only'
+
+# A known maintenance range must still fail Docpact; no Rust step follows it.
+run_hook "$fixture/maintenance-wire" 'FIXTURE_DOCPACT_EXIT=64'
+if [ "$hook_rc" -eq 64 ] && [ "$(wc -l < "$trace" | tr -d ' ')" -eq 1 ]; then
+  pass 'maintenance Docpact failure is preserved without a bypass'
+else fail 'maintenance Docpact failure is preserved' "exit=$hook_rc"; fi
+
+# Dirty/index/untracked state cannot substitute working contents for the commit.
+printf 'dirty runtime\n' >> "$repo/tracked.txt"
+expect_gate 'dirty tracked candidate keeps full gate' "$fixture/maintenance-wire"
+git -C "$repo" add tracked.txt
+expect_gate 'staged runtime edit keeps full gate' "$fixture/maintenance-wire"
+git -C "$repo" reset --hard -q "$maintenance_head"
+printf 'untracked runtime\n' > "$repo/untracked.rs"
+expect_gate 'untracked candidate keeps full gate' "$fixture/maintenance-wire"
+rm "$repo/untracked.rs"
+
+# Revalidation after Docpact must detect drift and execute the full path.
+run_hook "$fixture/maintenance-wire" 'FIXTURE_EDIT_DURING_DOCPACT=1'
+{
+  printf 'docpact-gate|6|%s|%s|--base|%s|--head|%s\n' "$remote_name" "$remote_path" "$maintenance_base" "$maintenance_head"
+  expected_gate_trace
+} > "$fixture/expected"
+if [ "$hook_rc" -eq 0 ] && cmp -s "$fixture/expected" "$trace"; then
+  pass 'candidate drift during Docpact falls back to full ordered gate'
+else fail 'candidate drift during Docpact falls back' "exit=$hook_rc"; fi
+git -C "$repo" reset --hard -q "$maintenance_head"
+
+# Index flags must not hide actual changed bytes from candidate cleanliness.
+for hidden_flag in assume-unchanged skip-worktree; do
+  git -C "$repo" update-index --"$hidden_flag" tracked.txt
+  printf 'hidden runtime bytes\n' >> "$repo/tracked.txt"
+  expect_gate "hidden dirty $hidden_flag entry keeps full gate" "$fixture/maintenance-wire"
+  git -C "$repo" update-index --no-"$hidden_flag" tracked.txt
+  git -C "$repo" reset --hard -q "$maintenance_head"
+done
+
+# Every executable/runtime/native/workflow or unknown path retains full checks.
+for protected in Cargo.toml Cargo.lock crates/example/src/lib.rs assets/fixture.json \
+  packaging/vcpkg/vcpkg.json .github/workflows/rust-ci.yml .github/actions/native-xml/action.yml \
+  scripts/native-cache-contract.sh scripts/pre-push-maintenance-only.sh .docpact/config.yaml unknown.txt; do
+  maintenance_reset
+  mkdir -p "$(dirname "$repo/$protected")"
+  printf '# protected candidate\n' >> "$repo/$protected"
+  printf '# maintenance too\n' >> "$repo/.github/dependabot.yml"
+  maintenance_commit
+  expect_gate "mixed/protected path $protected keeps full gate" "$fixture/maintenance-wire"
+done
+
+# An old remote feature tip does not prove its unmerged runtime work passed.
+# The wire B..C is config-only, but canonical Main A..C includes protected B.
+for already_remote_path in Cargo.toml crates/runtime.rs packaging/vcpkg/vcpkg.json; do
+  maintenance_reset
+  mkdir -p "$(dirname "$repo/$already_remote_path")"
+  printf 'already-pushed runtime/native input\n' > "$repo/$already_remote_path"
+  maintenance_commit
+  already_remote="${maintenance_head}"
+  printf '# later config only\n' >> "$repo/.github/dependabot.yml"
+  maintenance_commit
+  printf '%s %s %s %s\n' "$maintenance_ref" "$maintenance_head" "$maintenance_ref" "$already_remote" > "$fixture/maintenance-wire"
+  expect_gate "already-remote $already_remote_path remains cumulative protected work" "$fixture/maintenance-wire"
+done
+
+# Unknown or non-contained canonical tracking context cannot prove scope.
+maintenance_reset
+printf '# canonical context controls\n' >> "$repo/.github/dependabot.yml"
+maintenance_commit
+git -C "$repo" update-ref -d refs/remotes/origin/main
+expect_gate 'missing canonical Main keeps full gate' "$fixture/maintenance-wire"
+git -C "$repo" update-ref refs/remotes/origin/main "$maintenance_base"
+noncommit_main="$(git -C "$repo" rev-parse "$maintenance_base:.github/dependabot.yml")"
+git -C "$repo" update-ref refs/remotes/origin/main "$noncommit_main"
+expect_gate 'noncommit canonical tracking object keeps full gate' "$fixture/maintenance-wire"
+git -C "$repo" update-ref refs/remotes/origin/main "$maintenance_base"
+canonical_tree="$(git -C "$repo" rev-parse "$maintenance_base^{tree}")"
+diverged_main="$(printf 'diverged canonical' | git -C "$repo" commit-tree "$canonical_tree" -p "$maintenance_base")"
+git -C "$repo" update-ref refs/remotes/origin/main "$diverged_main"
+expect_gate 'diverged canonical Main keeps full gate' "$fixture/maintenance-wire"
+git -C "$repo" update-ref refs/remotes/origin/main "$maintenance_base"
+old_main="$(git -C "$repo" rev-parse "$maintenance_base^")"
+git -C "$repo" update-ref refs/remotes/origin/main "$old_main"
+expect_gate 'stale older Main broadens rather than hides unmerged inputs' "$fixture/maintenance-wire"
+git -C "$repo" update-ref refs/remotes/origin/main "$maintenance_base"
+
+# Two best merge bases are an ambiguous candidate context, even with equal trees.
+left="$(printf left | git -C "$repo" commit-tree "$canonical_tree" -p "$maintenance_base")"
+right="$(printf right | git -C "$repo" commit-tree "$canonical_tree" -p "$maintenance_base")"
+left_merge="$(printf left-merge | git -C "$repo" commit-tree "$canonical_tree" -p "$left" -p "$right")"
+right_merge="$(printf right-merge | git -C "$repo" commit-tree "$canonical_tree" -p "$right" -p "$left")"
+git -C "$repo" reset --hard -q "$right_merge"
+printf '# ambiguous canonical context\n' >> "$repo/.github/dependabot.yml"
+maintenance_commit
+printf '%s %s %s %s\n' "$maintenance_ref" "$maintenance_head" "$maintenance_ref" "$right_merge" > "$fixture/maintenance-wire"
+git -C "$repo" update-ref refs/remotes/origin/main "$left_merge"
+expect_gate 'multiple canonical merge bases keep full gate' "$fixture/maintenance-wire"
+git -C "$repo" update-ref refs/remotes/origin/main "$maintenance_base"
+
+# The complete range, not HEAD's last commit alone, governs eligibility.
+maintenance_reset
+printf 'earlier runtime edit\n' >> "$repo/tracked.txt"
+maintenance_commit
+printf '# latest docs only\n' >> "$repo/.github/dependabot.yml"
+maintenance_commit
+expect_gate 'earlier runtime change in range keeps full gate' "$fixture/maintenance-wire"
+
+# Even if a protected edit is reverted before the final tree, its pushed range
+# does not become a maintenance-only delivery.
+maintenance_reset
+printf 'temporary runtime edit\n' >> "$repo/tracked.txt"
+maintenance_commit
+git -C "$repo" checkout "$maintenance_base" -- tracked.txt
+printf '# runtime reverted\n' >> "$repo/.github/dependabot.yml"
+maintenance_commit
+expect_gate 'reverted runtime commit still keeps full gate' "$fixture/maintenance-wire"
+maintenance_reset
+chmod +x "$repo/.github/dependabot.yml"
+maintenance_commit
+chmod -x "$repo/.github/dependabot.yml"
+printf '# mode reverted\n' >> "$repo/.github/dependabot.yml"
+maintenance_commit
+expect_gate 'reverted executable mode still keeps full gate' "$fixture/maintenance-wire"
+
+maintenance_reset
+chmod +x "$repo/.github/dependabot.yml"
+maintenance_commit
+expect_gate 'allowed path mode change keeps full gate' "$fixture/maintenance-wire"
+maintenance_reset
+rm "$repo/docs/dependency-maintenance.md"
+ln -s ../tracked.txt "$repo/docs/dependency-maintenance.md"
+maintenance_commit
+expect_gate 'allowed path symlink keeps full gate' "$fixture/maintenance-wire"
+maintenance_reset
+rm "$repo/docs/dependency-maintenance.md"
+maintenance_commit
+expect_gate 'allowed path deletion keeps full gate' "$fixture/maintenance-wire"
+maintenance_reset
+git -C "$repo" mv docs/dependency-maintenance.md docs/renamed.md
+maintenance_commit
+expect_gate 'rename from allowed path keeps full gate' "$fixture/maintenance-wire"
+maintenance_reset
+printf '# known\n' >> "$repo/.github/dependabot.yml"
+maintenance_commit
+printf '%s %s %s %s\n' "$maintenance_ref" "$maintenance_head" "$maintenance_ref" "$zero40" > "$fixture/maintenance-new"
+expect_gate 'real new-branch creation has unknown range and keeps full gate' "$fixture/maintenance-new"
+printf '%s %s %s %s\n' "$maintenance_ref" "$maintenance_base" "$maintenance_ref" "$maintenance_head" > "$fixture/maintenance-stale"
+expect_gate 'non-HEAD local candidate keeps full gate' "$fixture/maintenance-stale"
+printf '%s %s %s %s\n' "$maintenance_ref" "$maintenance_head" "$maintenance_ref" "$sha1a" > "$fixture/maintenance-unknown"
+expect_gate 'unknown remote commit keeps full gate' "$fixture/maintenance-unknown"
+printf '%s %s %s %s\n' "$maintenance_ref" "$maintenance_head" "$maintenance_ref" "$maintenance_head" > "$fixture/maintenance-empty"
+expect_gate 'empty source range keeps full gate' "$fixture/maintenance-empty"
+cat "$fixture/maintenance-wire" "$fixture/maintenance-wire" > "$fixture/maintenance-multi"
+expect_gate 'multiple updates keep full gate' "$fixture/maintenance-multi"
+cat "$fixture/pure-delete" "$fixture/maintenance-wire" > "$fixture/maintenance-mixed"
+expect_gate 'delete plus maintenance is mixed and keeps full gate' "$fixture/maintenance-mixed"
+
+# A foreign root commit cannot be a proven published ancestor.
+foreign_tree="$(git -C "$repo" rev-parse "$maintenance_base^{tree}")"
+unrelated="$(printf unrelated | git -C "$repo" commit-tree "$foreign_tree")"
+printf '%s %s %s %s\n' "$maintenance_ref" "$maintenance_head" "$maintenance_ref" "$unrelated" > "$fixture/maintenance-unrelated"
+expect_gate 'unrelated remote history keeps full gate' "$fixture/maintenance-unrelated"
+
+mv "$repo/scripts/pre-push-maintenance-only.sh" "$fixture/maintenance-helper"
+expect_gate 'missing maintenance classifier keeps complete gate' "$fixture/maintenance-wire"
+printf '#!/bin/sh\nexit 42\n' > "$repo/scripts/pre-push-maintenance-only.sh"
+chmod +x "$repo/scripts/pre-push-maintenance-only.sh"
+expect_gate 'failed maintenance classifier keeps complete gate' "$fixture/maintenance-wire"
+mv "$fixture/maintenance-helper" "$repo/scripts/pre-push-maintenance-only.sh"
+maintenance_reset
+
 # --- manual TTY input must not block --------------------------------------
 # The guard must run before any stdin read; a terminal is never wire format.
 guard_line="$(grep -n '\[ -t 0 \] && exit 1' "$helper_src" | cut -d: -f1)"
@@ -303,4 +519,4 @@ if [ "$failures" -ne 0 ]; then
   printf '\n%d case(s) failed\n' "$failures" >&2
   exit 1
 fi
-printf '\nall pre-push deletion fast-path cases passed\n'
+printf '\nall pre-push deletion and exact maintenance-range cases passed\n'

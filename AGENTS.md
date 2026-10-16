@@ -33,8 +33,8 @@ checkPaths:
   - .github/actions/native-xml/**
   - .githooks/pre-push
 lastReviewedAt: 2026-10-16
-lastReviewedCommit: 767b4721cc7b7ae899942451f12fe2f69f73dd55
-lastReviewedNote: "Reviewed Toolkit #246 Dependabot Cargo/Actions pilot: dependency PRs retain existing product, native, release and exact-source qualification; public CLI behavior is unchanged."
+lastReviewedCommit: 703dd262b205b847f21d618aacc4ea06e5c5b347
+lastReviewedNote: "Reviewed Toolkit #247 supported vcpkg discovery and exact clean maintenance-range gate; public CLI/runtime/native pins, complete product fallback gates and qualification boundaries remain unchanged."
 related:
   - .docpact/config.yaml
   - docs/agents/repo-architecture.md
@@ -247,10 +247,13 @@ Install the versioned hook once per checkout:
 ```
 
 A pre-push input that contains only valid branch deletions delivers no source and
-skips validation (`scripts/pre-push-deletion-only.sh`); every other input keeps the
-full gate. See `docs/agents/repo-validation.md`.
+skips validation (`scripts/pre-push-deletion-only.sh`). A clean, exact known
+existing-branch wire and cumulative canonical-Main range changing only monitoring configuration and its focused
+maintenance guide still runs strict Docpact but may omit unrelated Rust work;
+all new/unknown/mixed/native/runtime/workflow/gate-code ranges keep the full gate.
+See `docs/agents/repo-validation.md` and `docs/dependency-maintenance.md`.
 
-The pre-push hook runs strict Docpact, the Rust-only repository audit, both
+For every remaining source input, the pre-push hook runs strict Docpact, the Rust-only repository audit, both
 asset locks, formatting, clippy, and the complete workspace test suite. The
 Docpact wrapper resolves the CLI without requiring bare `docpact` on `PATH`.
 

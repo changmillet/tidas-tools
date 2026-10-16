@@ -29,8 +29,8 @@ checkPaths:
   - .githooks/pre-push
   - scripts/**
 lastReviewedAt: 2026-10-16
-lastReviewedCommit: 767b4721cc7b7ae899942451f12fe2f69f73dd55
-lastReviewedNote: "Reviewed Toolkit #246 Dependabot Cargo/Actions pilot: dependency PRs retain existing product, native, release and exact-source qualification; public CLI behavior is unchanged."
+lastReviewedCommit: 703dd262b205b847f21d618aacc4ea06e5c5b347
+lastReviewedNote: "Reviewed Toolkit #247 supported vcpkg discovery and exact clean maintenance-range gate; public CLI/runtime/native pins, complete product fallback gates and qualification boundaries remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -302,9 +302,14 @@ updated separately when the tracked delivery requires it.
 ## Local gate
 
 A complete, valid branch-deletion-only input skips source validation because no
-source is delivered. All other inputs retain the versioned pre-push hook
-with strict Docpact, the Rust-only audit, paired and
-full asset locks, formatting, clippy, and workspace tests. See
+source is delivered. A clean known existing-branch range modifying only the
+monitoring config and its focused `docs/dependency-maintenance.md` guide in both
+the wire and cumulative canonical-Main ranges runs
+strict Docpact on the exact wire commits; candidate drift or any unknown/new,
+runtime/native/workflow/gate input, hidden index flag or unproved canonical
+tracking context retains the complete versioned gate.
+All such full paths keep the Rust-only audit, paired/full asset locks,
+formatting, Clippy and workspace tests. See
 `docs/agents/repo-validation.md` for focused and scale proof.
 
 

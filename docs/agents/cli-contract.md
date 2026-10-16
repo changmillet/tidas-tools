@@ -28,8 +28,8 @@ checkPaths:
   - README.md
   - README_CN.md
 lastReviewedAt: 2026-10-16
-lastReviewedCommit: 767b4721cc7b7ae899942451f12fe2f69f73dd55
-lastReviewedNote: "Reviewed Toolkit #246 Dependabot Cargo/Actions pilot: dependency PRs retain existing product, native, release and exact-source qualification; public CLI behavior is unchanged."
+lastReviewedCommit: 703dd262b205b847f21d618aacc4ea06e5c5b347
+lastReviewedNote: "Reviewed Toolkit #247 supported vcpkg discovery and exact clean maintenance-range gate; public CLI/runtime/native pins, complete product fallback gates and qualification boundaries remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

@@ -2,8 +2,8 @@ version: 1
 layout: repo
 # Review note, 2026-09-07: #187 adds the immutable v0.3.0 request for exact bbccee6; source, runtime, platform and ownership invariants are unchanged.
 lastReviewedAt: "2026-10-16"
-lastReviewedCommit: "767b4721cc7b7ae899942451f12fe2f69f73dd55"
-lastReviewedNote: "Reviewed Toolkit #246 Dependabot Cargo/Actions pilot: dependency PRs retain existing product, native, release and exact-source qualification; public CLI behavior is unchanged."
+lastReviewedCommit: 703dd262b205b847f21d618aacc4ea06e5c5b347
+lastReviewedNote: "Reviewed Toolkit #247 supported vcpkg discovery and exact clean maintenance-range gate; public CLI/runtime/native pins, complete product fallback gates and qualification boundaries remain unchanged."
 # Reviewed for Issue #177: macOS Intel is retired from the required native
 # matrix; Linux x86_64/ARM64, macOS Apple Silicon, and Windows x86_64 remain,
 # and ownership/routing/validation governance is otherwise unchanged.
@@ -30,6 +30,7 @@ ownership:
           - README_CN.md
           - .docpact/config.yaml
           - docs/agents/**
+          - docs/dependency-maintenance.md
           - migration/**
           - packaging/README.md
           - .github/workflows/ai-doc-lint.yml
@@ -98,6 +99,7 @@ ownership:
           - scripts/docpact-gate.sh
           - scripts/install-git-hooks.sh
           - scripts/pre-push-deletion-only.sh
+          - scripts/pre-push-maintenance-only.sh
           - scripts/test-pre-push.sh
       ownerRepo: tidas-tools
 
@@ -115,6 +117,7 @@ coverage:
     - .github/workflows/**
     - .github/actions/native-xml/**
     - docs/agents/**
+    - docs/dependency-maintenance.md
     - migration/**
     - packaging/**
     - Cargo.toml
@@ -278,6 +281,7 @@ docInventory:
     - .docpact/config.yaml
     - docs/agents/cli-contract.md
     - docs/agents/repo-validation.md
+    - docs/dependency-maintenance.md
     - docs/agents/repo-architecture.md
     - packaging/README.md
     - migration/python-to-rust-owners.md
@@ -369,10 +373,12 @@ rules:
     triggers:
       - path: .github/dependabot.yml
         kind: dependency-automation
+      - path: docs/dependency-maintenance.md
+        kind: maintenance-guide
     requiredDocs:
-      - path: docs/agents/repo-validation.md
+      - path: docs/dependency-maintenance.md
         mode: review_or_update
-    reason: Dependency scheduling and grouping must preserve the maintainer review and qualification path.
+    reason: Monitoring-only scheduling and ownership need focused guidance; all product, native, workflow and gate-code changes retain their semantic contracts.
   - id: tidas-tools-automation-contract
     scope: repo
     repo: tidas-tools

@@ -13,6 +13,7 @@ on:
       - scripts/audit-rust-only.sh
       - .githooks/**
       - scripts/pre-push-deletion-only.sh
+      - scripts/pre-push-maintenance-only.sh
       - scripts/test-pre-push.sh
   workflow_dispatch:
 
@@ -43,7 +44,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Test pre-push deletion-only classification
+      - name: Test pre-push exact-range classification
         shell: bash
         run: sh scripts/test-pre-push.sh
 
