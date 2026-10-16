@@ -4,11 +4,30 @@ set -eu
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
-# A push that only deletes branches delivers no source. Classification reads the
-# complete pre-push input once; every other input keeps the full gate below.
-if "$repo_root/scripts/pre-push-deletion-only.sh"; then
+# Capture the complete wire input once so each conservative classifier sees it.
+# A terminal is not Git wire input and must never block waiting for EOF.
+push_input="$(mktemp "${TMPDIR:-/tmp}/pre-push-input.XXXXXX")"
+trap 'rm -f "$push_input"' EXIT HUP INT TERM
+if [ ! -t 0 ]; then cat > "$push_input"; fi
+
+# A push that only deletes branches delivers no source.
+if "$repo_root/scripts/pre-push-deletion-only.sh" < "$push_input"; then
   echo "Pre-push input contains only valid branch deletions; no source is being delivered."
   exit 0
+fi
+
+# Only a clean known branch range of monitoring config/guide modifications may
+# omit unrelated Rust work. Docpact still receives the exact wire range, not an
+# ambient comparison override; recheck after it to reject candidate drift.
+if maintenance_range="$("$repo_root/scripts/pre-push-maintenance-only.sh" < "$push_input")"; then
+  maintenance_base="${maintenance_range% *}"
+  maintenance_head="${maintenance_range#* }"
+  "$repo_root/scripts/docpact-gate.sh" "$@" --base "$maintenance_base" --head "$maintenance_head"
+  if verified_range="$("$repo_root/scripts/pre-push-maintenance-only.sh" < "$push_input")" &&
+     [ "$verified_range" = "$maintenance_range" ]; then
+    echo "Verified monitoring-only candidate range; Docpact passed, native/Rust inputs unchanged."
+    exit 0
+  fi
 fi
 
 "$repo_root/scripts/docpact-gate.sh" "$@"

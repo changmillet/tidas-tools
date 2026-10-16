@@ -31,3 +31,13 @@ updates:
       github-actions:
         patterns:
           - "*"
+  - package-ecosystem: vcpkg
+    directory: /packaging/vcpkg
+    schedule:
+      interval: weekly
+      day: wednesday
+      time: "03:20"
+      timezone: Asia/Shanghai
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 1

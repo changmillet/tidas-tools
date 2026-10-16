@@ -28,8 +28,8 @@ checkPaths:
   - README.md
   - README_CN.md
 lastReviewedAt: 2026-10-16
-lastReviewedCommit: 767b4721cc7b7ae899942451f12fe2f69f73dd55
-lastReviewedNote: "Reviewed Toolkit #246 Dependabot Cargo/Actions pilot: dependency PRs retain existing product, native, release and exact-source qualification; public CLI behavior is unchanged."
+lastReviewedCommit: 9190855cbc85549c182a80112ac41a23fd7e0757
+lastReviewedNote: "Reviewed Toolkit #247 / PR #252 Windows fixture correction: committed executable and symlink modes use explicit Git index plumbing; full-gate negatives, product/native pins and CLI behavior remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
