@@ -29,8 +29,8 @@ checkPaths:
   - .githooks/pre-push
   - scripts/**
 lastReviewedAt: 2026-10-16
-lastReviewedCommit: 703dd262b205b847f21d618aacc4ea06e5c5b347
-lastReviewedNote: "Reviewed Toolkit #247 supported vcpkg discovery and exact clean maintenance-range gate; public CLI/runtime/native pins, complete product fallback gates and qualification boundaries remain unchanged."
+lastReviewedCommit: 9190855cbc85549c182a80112ac41a23fd7e0757
+lastReviewedNote: "Reviewed Toolkit #247 / PR #252 Windows fixture correction: committed executable and symlink modes use explicit Git index plumbing; full-gate negatives, product/native pins and CLI behavior remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

@@ -285,9 +285,22 @@ git -C "$repo" update-ref refs/remotes/origin/main "$maintenance_base"
 maintenance_reset() { git -C "$repo" reset --hard -q "$maintenance_base"; git -C "$repo" clean -fdq; }
 maintenance_commit() {
   git -C "$repo" add -A
+  maintenance_commit_index
+}
+# Index plumbing fixtures must commit their explicit modes without re-adding
+# the worktree, which may not expose executable bits or physical symlinks.
+maintenance_commit_index() {
   git -C "$repo" commit -qm 'fixture candidate'
   maintenance_head="$(git -C "$repo" rev-parse HEAD)"
   printf '%s %s %s %s\n' "$maintenance_ref" "$maintenance_head" "$maintenance_ref" "$maintenance_base" > "$fixture/maintenance-wire"
+}
+# Fail the fixture itself if it did not create the intended committed mode.
+assert_tree_mode() { # mode, path
+  actual_mode="$(git -C "$repo" ls-tree HEAD -- "$2" | cut -d ' ' -f 1)"
+  if [ "$actual_mode" != "$1" ]; then
+    printf 'fixture mode for %s is %s, wanted %s\n' "$2" "$actual_mode" "$1" >&2
+    exit 1
+  fi
 }
 expect_maintenance() { # name, optional env
   run_hook "$fixture/maintenance-wire" "${2:-}"
@@ -426,21 +439,36 @@ printf '# runtime reverted\n' >> "$repo/.github/dependabot.yml"
 maintenance_commit
 expect_gate 'reverted runtime commit still keeps full gate' "$fixture/maintenance-wire"
 maintenance_reset
+# chmod alone is not a Git mode change when core.fileMode=false (Windows).
+# Keep the worktree consistent where supported and encode the tree explicitly.
 chmod +x "$repo/.github/dependabot.yml"
-maintenance_commit
+git -C "$repo" update-index --chmod=+x .github/dependabot.yml
+maintenance_commit_index
+assert_tree_mode 100755 .github/dependabot.yml
 chmod -x "$repo/.github/dependabot.yml"
 printf '# mode reverted\n' >> "$repo/.github/dependabot.yml"
-maintenance_commit
+git -C "$repo" add -A
+git -C "$repo" update-index --chmod=-x .github/dependabot.yml
+maintenance_commit_index
+assert_tree_mode 100644 .github/dependabot.yml
 expect_gate 'reverted executable mode still keeps full gate' "$fixture/maintenance-wire"
 
 maintenance_reset
 chmod +x "$repo/.github/dependabot.yml"
-maintenance_commit
+git -C "$repo" update-index --chmod=+x .github/dependabot.yml
+maintenance_commit_index
+assert_tree_mode 100755 .github/dependabot.yml
 expect_gate 'allowed path mode change keeps full gate' "$fixture/maintenance-wire"
 maintenance_reset
+# Store a real Git symlink even when checkout represents it as a regular file
+# containing the target (core.symlinks=false); no symlink privilege is required.
+link_blob="$(printf '%s' ../tracked.txt | git -C "$repo" hash-object -w --stdin)"
+git -C "$repo" update-index --add --cacheinfo "120000,$link_blob,docs/dependency-maintenance.md"
+maintenance_commit_index
+assert_tree_mode 120000 docs/dependency-maintenance.md
 rm "$repo/docs/dependency-maintenance.md"
-ln -s ../tracked.txt "$repo/docs/dependency-maintenance.md"
-maintenance_commit
+git -C "$repo" checkout-index -- docs/dependency-maintenance.md
+git -C "$repo" diff --exit-code HEAD -- docs/dependency-maintenance.md
 expect_gate 'allowed path symlink keeps full gate' "$fixture/maintenance-wire"
 maintenance_reset
 rm "$repo/docs/dependency-maintenance.md"
