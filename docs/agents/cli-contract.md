@@ -27,9 +27,9 @@ checkPaths:
   - contracts/**
   - README.md
   - README_CN.md
-lastReviewedAt: 2026-10-16
-lastReviewedCommit: 9190855cbc85549c182a80112ac41a23fd7e0757
-lastReviewedNote: "Reviewed Toolkit #247 / PR #252 Windows fixture correction: committed executable and symlink modes use explicit Git index plumbing; full-gate negatives, product/native pins and CLI behavior remain unchanged."
+lastReviewedAt: 2026-10-17
+lastReviewedCommit: 3dc5df3d3b08dbc97a7881bd14cb63cb56f7f623
+lastReviewedNote: "Reviewed Toolkit #254 compatible twelve-family Cargo lock refresh: product0.3.4, Rust1.98.1, exact specification/asset/native pins and public CLI/protocol/release boundaries remain unchanged; full local and exact hosted qualification remain required."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
