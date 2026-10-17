@@ -27,9 +27,9 @@ checkPaths:
   - contracts/**
   - README.md
   - README_CN.md
-lastReviewedAt: 2026-10-16
-lastReviewedCommit: 9190855cbc85549c182a80112ac41a23fd7e0757
-lastReviewedNote: "Reviewed Toolkit #247 / PR #252 Windows fixture correction: committed executable and symlink modes use explicit Git index plumbing; full-gate negatives, product/native pins and CLI behavior remain unchanged."
+lastReviewedAt: 2026-10-17
+lastReviewedCommit: b006ae1fd4ffc87c62387df914f641a9b0f7b365
+lastReviewedNote: "Reviewed Toolkit #254 Rustls 0.23.46 and required AWS-LC/WebPKI records: product0.3.4, Rust1.98.1, specification/assets/native pins, TLS configuration and release policies are unchanged. Isolated TLS runtime validation was not completed; fresh hosted qualification remains required."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
