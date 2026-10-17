@@ -229,6 +229,15 @@ imports, source-bound notices, repeatable archive bytes, checksums, smoke and th
 complete four-platform qualification remain mandatory. A cache hit is not a
 qualification receipt.
 
+Unix setup removes inherited `VCPKG_FORCE_SYSTEM_BINARIES` in its own process so
+vcpkg can select and verify its existing pinned tools. Even an empty value or `0`
+forces system selection upstream. `scripts/test-native-cache.sh` executes that
+action block with hermetic command shims, checks inherited presence and parent
+environment preservation, and removes the correction as a failing control. It also
+checks that Rust CI selects native manifest, action, release-workflow and cache
+helper changes. Actual selected-tool identity and successful native installation
+still require fresh hosted qualification.
+
 Outer keys bind the hosted image/platform, triplet, pinned vcpkg baseline and the
 manifest/action/key implementation bytes. vcpkg retains its own ABI selection.
 Main pushes affecting native-cache inputs seed default-branch archives through the
