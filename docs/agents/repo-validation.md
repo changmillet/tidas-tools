@@ -30,8 +30,8 @@ checkPaths:
   - .githooks/pre-push
   - scripts/**
 lastReviewedAt: 2026-10-17
-lastReviewedCommit: 6ce298ba892565a942bdd7d706350269ac917071
-lastReviewedNote: "Reviewed Toolkit #254 compatible Cargo maintenance and authorized chacha20 0.10.2 SSE2 patch: product0.3.4, Rust1.98.1, specification/assets/native pins and public CLI/protocol/release policies are unchanged; final full local and exact hosted qualification remain required."
+lastReviewedCommit: b006ae1fd4ffc87c62387df914f641a9b0f7b365
+lastReviewedNote: "Reviewed Toolkit #254 Rustls 0.23.46 and required AWS-LC/WebPKI records: product0.3.4, Rust1.98.1, specification/assets/native pins, TLS configuration and release policies are unchanged. Isolated TLS runtime validation was not completed; fresh hosted qualification remains required."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
