@@ -30,8 +30,8 @@ checkPaths:
   - .githooks/pre-push
   - scripts/**
 lastReviewedAt: 2026-10-17
-lastReviewedCommit: 513b1c23a51e43162cba23518cfb9f3056662283
-lastReviewedNote: "Reviewed Toolkit #256 coupled vcpkg baseline 9e593bb1 and matching tool checkout: XML versions, Cargo security graph, product0.3.4, Rust1.98.1, specification/assets and all release policies are unchanged. Fresh four-platform native qualification remains required; prior #254 TLS runtime uncertainty is retained."
+lastReviewedCommit: 675980b8e9bfe3a3b747ef0bb1daee3063b02061
+lastReviewedNote: "Reviewed Toolkit #256 native Unix child-process restoration of pinned tool acquisition and native-input Rust CI coverage. Product0.3.4, Rust1.98.1, Cargo security graph, native pins, specification/assets and release policies are unchanged. Fresh four-platform qualification remains required; prior TLS runtime uncertainty is retained."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
