@@ -2,7 +2,7 @@
 set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 helper="$root/scripts/native-cache-contract.sh"
-baseline=40f3c709db80acf154ac4b17a1f83c564ebd022e
+baseline=9e593bb18ea69cc5095e012465dcd675a822ed0d
 inputs=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 key() { bash "$helper" key "$@"; }
 fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }

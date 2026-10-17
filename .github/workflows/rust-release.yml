@@ -37,7 +37,7 @@ permissions:
 
 env:
   CARGO_TERM_COLOR: always
-  VCPKG_COMMIT: 40f3c709db80acf154ac4b17a1f83c564ebd022e
+  VCPKG_COMMIT: 9e593bb18ea69cc5095e012465dcd675a822ed0d
 
 jobs:
   package-crates:
