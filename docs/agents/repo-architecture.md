@@ -29,8 +29,8 @@ checkPaths:
   - .githooks/pre-push
   - scripts/**
 lastReviewedAt: 2026-10-17
-lastReviewedCommit: 675980b8e9bfe3a3b747ef0bb1daee3063b02061
-lastReviewedNote: "Reviewed Toolkit #256 native Unix child-process restoration of pinned tool acquisition and native-input Rust CI coverage. Product0.3.4, Rust1.98.1, Cargo security graph, native pins, specification/assets and release policies are unchanged. Fresh four-platform qualification remains required; prior TLS runtime uncertainty is retained."
+lastReviewedCommit: a7357fdf4f519e8679b907820e8bb9aa9e3d05d8
+lastReviewedNote: "Reviewed Toolkit #257 immutable checkout, artifact, attestation and SBOM Actions against current Main. Product0.3.4, Rust1.98.1, Cargo/native/specification inputs, permissions, source/artifact identities and release/dispatch guards are unchanged. Local qualification is separate from fresh hosted four-platform proof; non-PR attestation execution and prior TLS runtime uncertainty remain unclaimed."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
