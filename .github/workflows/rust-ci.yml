@@ -15,6 +15,11 @@ on:
       - scripts/pre-push-deletion-only.sh
       - scripts/pre-push-maintenance-only.sh
       - scripts/test-pre-push.sh
+      - packaging/vcpkg/**
+      - .github/actions/native-xml/**
+      - .github/workflows/rust-release.yml
+      - scripts/native-cache-contract.sh
+      - scripts/test-native-cache.sh
   workflow_dispatch:
 
 permissions:

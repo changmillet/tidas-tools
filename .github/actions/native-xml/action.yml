@@ -48,6 +48,9 @@ runs:
         VCPKG_DEFAULT_BINARY_CACHE: ${{ runner.temp }}/vcpkg-archives
         VCPKG_BINARY_SOURCES: clear;default,readwrite
       run: |
+        # Hosted ARM64 images force system tools by variable presence, even 0.
+        # Restore vcpkg's pinned acquisition only in this setup process.
+        unset VCPKG_FORCE_SYSTEM_BINARIES
         if [ "$NATIVE_FAMILY" = linux ]; then
           sudo apt-get update
           sudo apt-get install --yes pkg-config

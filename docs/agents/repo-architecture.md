@@ -29,8 +29,8 @@ checkPaths:
   - .githooks/pre-push
   - scripts/**
 lastReviewedAt: 2026-10-17
-lastReviewedCommit: b006ae1fd4ffc87c62387df914f641a9b0f7b365
-lastReviewedNote: "Reviewed Toolkit #254 Rustls 0.23.46 and required AWS-LC/WebPKI records: product0.3.4, Rust1.98.1, specification/assets/native pins, TLS configuration and release policies are unchanged. Isolated TLS runtime validation was not completed; fresh hosted qualification remains required."
+lastReviewedCommit: 675980b8e9bfe3a3b747ef0bb1daee3063b02061
+lastReviewedNote: "Reviewed Toolkit #256 native Unix child-process restoration of pinned tool acquisition and native-input Rust CI coverage. Product0.3.4, Rust1.98.1, Cargo security graph, native pins, specification/assets and release policies are unchanged. Fresh four-platform qualification remains required; prior TLS runtime uncertainty is retained."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

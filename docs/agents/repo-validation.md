@@ -30,8 +30,8 @@ checkPaths:
   - .githooks/pre-push
   - scripts/**
 lastReviewedAt: 2026-10-17
-lastReviewedCommit: b006ae1fd4ffc87c62387df914f641a9b0f7b365
-lastReviewedNote: "Reviewed Toolkit #254 Rustls 0.23.46 and required AWS-LC/WebPKI records: product0.3.4, Rust1.98.1, specification/assets/native pins, TLS configuration and release policies are unchanged. Isolated TLS runtime validation was not completed; fresh hosted qualification remains required."
+lastReviewedCommit: 675980b8e9bfe3a3b747ef0bb1daee3063b02061
+lastReviewedNote: "Reviewed Toolkit #256 native Unix child-process restoration of pinned tool acquisition and native-input Rust CI coverage. Product0.3.4, Rust1.98.1, Cargo security graph, native pins, specification/assets and release policies are unchanged. Fresh four-platform qualification remains required; prior TLS runtime uncertainty is retained."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -228,6 +228,15 @@ action verifier. Windows checks each native command's exit code. Existing static
 imports, source-bound notices, repeatable archive bytes, checksums, smoke and the
 complete four-platform qualification remain mandatory. A cache hit is not a
 qualification receipt.
+
+Unix setup removes inherited `VCPKG_FORCE_SYSTEM_BINARIES` in its own process so
+vcpkg can select and verify its existing pinned tools. Even an empty value or `0`
+forces system selection upstream. `scripts/test-native-cache.sh` executes that
+action block with hermetic command shims, checks inherited presence and parent
+environment preservation, and removes the correction as a failing control. It also
+checks that Rust CI selects native manifest, action, release-workflow and cache
+helper changes. Actual selected-tool identity and successful native installation
+still require fresh hosted qualification.
 
 Outer keys bind the hosted image/platform, triplet, pinned vcpkg baseline and the
 manifest/action/key implementation bytes. vcpkg retains its own ABI selection.
