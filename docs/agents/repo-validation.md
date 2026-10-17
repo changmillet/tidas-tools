@@ -31,7 +31,7 @@ checkPaths:
   - scripts/**
 lastReviewedAt: 2026-10-17
 lastReviewedCommit: a7357fdf4f519e8679b907820e8bb9aa9e3d05d8
-lastReviewedNote: "Reviewed Toolkit #257 immutable checkout, artifact, attestation and SBOM Actions against current Main. Product0.3.4, Rust1.98.1, Cargo/native/specification inputs, permissions, source/artifact identities and release/dispatch guards are unchanged. Local qualification is separate from fresh hosted four-platform proof; tag-only attestation and prior TLS runtime uncertainty remain unclaimed."
+lastReviewedNote: "Reviewed Toolkit #257 immutable checkout, artifact, attestation and SBOM Actions against current Main. Product0.3.4, Rust1.98.1, Cargo/native/specification inputs, permissions, source/artifact identities and release/dispatch guards are unchanged. Local qualification is separate from fresh hosted four-platform proof; non-PR attestation execution and prior TLS runtime uncertainty remain unclaimed."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
