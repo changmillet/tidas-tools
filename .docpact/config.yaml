@@ -2,8 +2,8 @@ version: 1
 layout: repo
 # Review note, 2026-09-07: #187 adds the immutable v0.3.0 request for exact bbccee6; source, runtime, platform and ownership invariants are unchanged.
 lastReviewedAt: "2026-10-17"
-lastReviewedCommit: "b006ae1fd4ffc87c62387df914f641a9b0f7b365"
-lastReviewedNote: "Reviewed Toolkit #254 Rustls 0.23.46 and required AWS-LC/WebPKI records: product0.3.4, Rust1.98.1, specification/assets/native pins, TLS configuration and release policies are unchanged. Isolated TLS runtime validation was not completed; fresh hosted qualification remains required."
+lastReviewedCommit: "513b1c23a51e43162cba23518cfb9f3056662283"
+lastReviewedNote: "Reviewed Toolkit #256 coupled vcpkg baseline 9e593bb1 and matching tool checkout: XML versions, Cargo security graph, product0.3.4, Rust1.98.1, specification/assets and all release policies are unchanged. Fresh four-platform native qualification remains required; prior #254 TLS runtime uncertainty is retained."
 # Reviewed for Issue #177: macOS Intel is retired from the required native
 # matrix; Linux x86_64/ARM64, macOS Apple Silicon, and Windows x86_64 remain,
 # and ownership/routing/validation governance is otherwise unchanged.
