@@ -6,8 +6,8 @@ use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use tidas_import::{ImportRequest, ImportTarget, SourceFormat, run_import};
 use tidas_release::{
-    RELEASE_REPORT_JSON_SCHEMA_V1, ReleaseProfile, ReleaseRequest, ReleaseRuntime, UNIT_PROFILE,
-    run_release,
+    RELEASE_REPORT_JSON_SCHEMA_V1, ReleaseDataFormat, ReleaseError, ReleaseProfile, ReleaseRequest,
+    ReleaseRuntime, UNIT_PROFILE, run_release,
 };
 use tidas_runtime::{CancellationToken, MemoryBudget, RuntimeError};
 use walkdir::WalkDir;
@@ -494,6 +494,7 @@ fn native_valid_tree_builds_four_repeatable_self_contained_packages() {
             tidas_dir: tidas.clone(),
             dataset_index: index.clone(),
             output_dir: first_output.clone(),
+            issue_spool: None,
         },
         &runtime(),
     )
@@ -518,6 +519,7 @@ fn native_valid_tree_builds_four_repeatable_self_contained_packages() {
             tidas_dir: tidas,
             dataset_index: index,
             output_dir: temporary.path().join("release-b"),
+            issue_spool: None,
         },
         &runtime(),
     )
@@ -537,6 +539,40 @@ fn native_valid_tree_builds_four_repeatable_self_contained_packages() {
             .map(|package| &package.artifact.sha256)
             .collect::<Vec<_>>()
     );
+}
+
+#[test]
+fn failed_package_build_writes_the_requested_issue_spool() {
+    let temporary = tempfile::tempdir().unwrap();
+    let (tidas, index) = fixture(temporary.path());
+    let spool = temporary.path().join("validation-issues.ndjson");
+    let error = run_release(
+        &ReleaseRequest::BuildPackages {
+            tidas_dir: tidas,
+            dataset_index: index,
+            output_dir: temporary.path().join("release"),
+            issue_spool: Some(spool.clone()),
+        },
+        &runtime(),
+    )
+    .unwrap_err();
+    match error {
+        ReleaseError::ValidationIssues {
+            format,
+            summary,
+            issue_spool,
+        } => {
+            assert_eq!(format, ReleaseDataFormat::Tidas);
+            assert_eq!(issue_spool.as_deref(), Some(spool.as_path()));
+            assert!(!summary.ok);
+            assert!(summary.issue_count > 0);
+            assert!(summary.issue_spool.is_some());
+        }
+        other => panic!("unexpected release error: {other}"),
+    }
+    let bytes = fs::read(&spool).unwrap();
+    assert!(!bytes.is_empty());
+    assert!(String::from_utf8_lossy(&bytes).contains("issue_code"));
 }
 
 fn write_index_for_valid_package(tidas: &Path, root: &Path) -> PathBuf {

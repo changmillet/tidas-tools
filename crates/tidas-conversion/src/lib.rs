@@ -22,7 +22,9 @@ use walkdir::WalkDir;
 
 use transaction::StagedDirectory;
 
-pub use ordering::{IlcdSchemaOrderer, TidasSchemaOrderer};
+pub use ordering::{
+    IlcdSchemaOrderer, MAX_REPORTED_UNSUPPORTED_ELEMENTS, TidasSchemaOrderer, UnsupportedElementV1,
+};
 pub use projection::{
     EILCD_PROJECTION_RECOVERY_SCHEMA_V1, EilcdProjectionRecoveryV1, EilcdProjectionV1,
     ProjectionRestorationV1, project_tidas_to_eilcd, restore_tidas_projection,
@@ -125,6 +127,22 @@ pub struct ConversionReportV1 {
     pub output_tree_sha256: String,
     pub asset_fingerprint: String,
     pub peak_accounted_memory_bytes: u64,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub unsupported_elements: Vec<UnsupportedElementV1>,
+    #[serde(default, skip_serializing_if = "is_zero_u64")]
+    pub unsupported_element_count: u64,
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub unsupported_elements_truncated: bool,
+}
+
+#[allow(clippy::trivially_copy_pass_by_ref)]
+fn is_zero_u64(value: &u64) -> bool {
+    *value == 0
+}
+
+#[allow(clippy::trivially_copy_pass_by_ref)]
+fn is_false(value: &bool) -> bool {
+    !*value
 }
 
 pub fn convert_directory(
@@ -156,6 +174,9 @@ pub fn convert_directory(
         output_tree_sha256: String::new(),
         asset_fingerprint: asset_fingerprint()?,
         peak_accounted_memory_bytes: 0,
+        unsupported_elements: Vec::new(),
+        unsupported_element_count: 0,
+        unsupported_elements_truncated: false,
     };
     report_progress(request, "started", &report, true)?;
     if request.output_dir.exists() {
@@ -350,7 +371,18 @@ fn convert_file(
             if let (Some(orderer), Some(category)) =
                 (orderer, dataset_category(source_root, source))
             {
-                document = orderer.order_document(&document, category)?;
+                let (sorted_document, diagnostics) =
+                    orderer.order_document_reporting(&document, category)?;
+                document = sorted_document;
+                report.unsupported_element_count = report
+                    .unsupported_element_count
+                    .saturating_add(diagnostics.unsupported_element_count);
+                report.unsupported_elements_truncated |= diagnostics.truncated();
+                for element in diagnostics.unsupported_elements {
+                    if report.unsupported_elements.len() < MAX_REPORTED_UNSUPPORTED_ELEMENTS {
+                        report.unsupported_elements.push(element);
+                    }
+                }
             }
             (
                 format::json_value_to_xml(&document, &request.cancellation)?,

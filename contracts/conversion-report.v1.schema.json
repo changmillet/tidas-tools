@@ -59,6 +59,29 @@
     "peak_accounted_memory_bytes": {
       "type": "integer",
       "minimum": 0
+    },
+    "unsupported_elements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "element"],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "element": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "unsupported_element_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "unsupported_elements_truncated": {
+      "type": "boolean"
     }
   }
 }

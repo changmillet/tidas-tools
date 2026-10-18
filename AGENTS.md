@@ -32,9 +32,9 @@ checkPaths:
   - .github/workflows/**
   - .github/actions/native-xml/**
   - .githooks/pre-push
-lastReviewedAt: 2026-10-17
-lastReviewedCommit: a7357fdf4f519e8679b907820e8bb9aa9e3d05d8
-lastReviewedNote: "Reviewed Toolkit #257 immutable checkout, artifact, attestation and SBOM Actions against current Main. Product0.3.4, Rust1.98.1, Cargo/native/specification inputs, permissions, source/artifact identities and release/dispatch guards are unchanged. Local qualification is separate from fresh hosted four-platform proof; non-PR attestation execution and prior TLS runtime uncertainty remain unclaimed."
+lastReviewedAt: 2026-10-18
+lastReviewedCommit: 32481ae526a43a22ae080b7c753aa7e4f2800078
+lastReviewedNote: "Reviewed Toolkit #258 against current Main: eILCD exchange data-source projection, lifecycle-model registration-authority omission, unsupported-element reporting and release validation issue-spool output preserve existing ownership, platform, asset and release guards; local Rust and CLI spool proofs pass."
 related:
   - .docpact/config.yaml
   - docs/agents/repo-architecture.md
@@ -147,6 +147,9 @@ For workspace-tracked delivery, also follow the root workspace
 - Validation issue and batch-event spools must persist atomically under normal
   task-contained Windows paths beyond 260 characters. Reports retain the
   caller's path and distinguish data findings from I/O failure.
+- A failed release package build must write the caller-requested issue spool and
+  expose it as an `application/x-ndjson` operation-report artifact with hash and
+  byte count; a successful build removes that spool.
 - Issue count must not cause linear operation-report memory growth.
 - Successful output publication is atomic and deterministic for identical
   inputs; failures must not expose partial output.
