@@ -28,9 +28,9 @@ checkPaths:
   - .github/actions/native-xml/**
   - .githooks/pre-push
   - scripts/**
-lastReviewedAt: 2026-10-17
-lastReviewedCommit: a7357fdf4f519e8679b907820e8bb9aa9e3d05d8
-lastReviewedNote: "Reviewed Toolkit #257 immutable checkout, artifact, attestation and SBOM Actions against current Main. Product0.3.4, Rust1.98.1, Cargo/native/specification inputs, permissions, source/artifact identities and release/dispatch guards are unchanged. Local qualification is separate from fresh hosted four-platform proof; non-PR attestation execution and prior TLS runtime uncertainty remain unclaimed."
+lastReviewedAt: 2026-10-18
+lastReviewedCommit: 32481ae526a43a22ae080b7c753aa7e4f2800078
+lastReviewedNote: "Reviewed Toolkit #258 against current Main: eILCD exchange data-source projection, lifecycle-model registration-authority omission, unsupported-element reporting and release validation issue-spool output preserve existing ownership, platform, asset and release guards; local Rust and CLI spool proofs pass."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -150,6 +150,9 @@ their existing path behavior.
 Release consumes finalized UUID/version decisions. It resolves exact
 standalone/full closure, derives schema-ordered ILCD, runs native validation and
 semantic round-trip gates, and publishes two TIDAS plus two ILCD archives.
+Package validation can persist a caller-requested NDJSON issue spool; a failed
+build retains it and exposes it as an operation-report artifact, while a
+successful build removes it so only failure evidence remains.
 
 ## Asset ownership
 

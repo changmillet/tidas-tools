@@ -29,9 +29,9 @@ checkPaths:
   - .github/actions/native-xml/**
   - .githooks/pre-push
   - scripts/**
-lastReviewedAt: 2026-10-17
-lastReviewedCommit: a7357fdf4f519e8679b907820e8bb9aa9e3d05d8
-lastReviewedNote: "Reviewed Toolkit #257 immutable checkout, artifact, attestation and SBOM Actions against current Main. Product0.3.4, Rust1.98.1, Cargo/native/specification inputs, permissions, source/artifact identities and release/dispatch guards are unchanged. Local qualification is separate from fresh hosted four-platform proof; non-PR attestation execution and prior TLS runtime uncertainty remain unclaimed."
+lastReviewedAt: 2026-10-18
+lastReviewedCommit: 32481ae526a43a22ae080b7c753aa7e4f2800078
+lastReviewedNote: "Reviewed Toolkit #258 against current Main: eILCD exchange data-source projection, lifecycle-model registration-authority omission, unsupported-element reporting and release validation issue-spool output preserve existing ownership, platform, asset and release guards; local Rust and CLI spool proofs pass."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -316,6 +316,11 @@ findings with explicit truncation. Direct release validation and every build
 validation/profile coverage preserve unresolved partial completeness. Semantic
 analysis uses conservative additional memory reservation for its finding and
 coverage projections; exhausted budgets fail before successful publication.
+
+`cargo test --locked -p tidas-release --test native_release` proves a failed
+package build writes the requested NDJSON issue spool, carries the validation
+summary, and retains the spool path. The CLI contract test proves the spool is
+reported as an `application/x-ndjson` artifact with hash and byte count.
 
 Additional native wire tests cover float-encoded integer IDs independently in
 exchange, qref and allocation-target positions. Dense 250-row reference/share
