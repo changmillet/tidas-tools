@@ -33,8 +33,8 @@ checkPaths:
   - .github/actions/native-xml/**
   - .githooks/pre-push
 lastReviewedAt: 2026-10-18
-lastReviewedCommit: 32481ae526a43a22ae080b7c753aa7e4f2800078
-lastReviewedNote: "Reviewed Toolkit #258 against current Main: eILCD exchange data-source projection, lifecycle-model registration-authority omission, unsupported-element reporting and release validation issue-spool output preserve existing ownership, platform, asset and release guards; local Rust and CLI spool proofs pass."
+lastReviewedCommit: a20c016775a4d6f9180c3c0cfc2dd19d9e9ff59f
+lastReviewedNote: "Reviewed Toolkit #260 against current Main: workspace version advanced to 0.3.5 after the #258 conversion and issue-spool fix; ownership, platform, asset, contract and release guards are unchanged; local Rust qualification passes."
 related:
   - .docpact/config.yaml
   - docs/agents/repo-architecture.md
