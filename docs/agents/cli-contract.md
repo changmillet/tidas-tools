@@ -28,8 +28,8 @@ checkPaths:
   - README.md
   - README_CN.md
 lastReviewedAt: 2026-10-18
-lastReviewedCommit: a20c016775a4d6f9180c3c0cfc2dd19d9e9ff59f
-lastReviewedNote: "Reviewed Toolkit #260 against current Main: workspace version advanced to 0.3.5 after the #258 conversion and issue-spool fix; ownership, platform, asset, contract and release guards are unchanged; local Rust qualification passes."
+lastReviewedCommit: 74622220c4c0f181ee2cb8ceeccbaac53df43b2f
+lastReviewedNote: "Reviewed Toolkit #261 native release request v0.3.5 against current Main. The request binds the exact 0.3.5 version commit; CI, release, distribution and Rust-only guards are unchanged and the release workflow remains the sole tag/dispatch authority."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
