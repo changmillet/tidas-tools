@@ -48,6 +48,7 @@ pub enum ReleaseRequest {
         tidas_dir: PathBuf,
         dataset_index: PathBuf,
         output_dir: PathBuf,
+        issue_spool: Option<PathBuf>,
     },
     ConvertIlcd {
         input_dir: PathBuf,
@@ -275,12 +276,12 @@ pub fn run_release(
             report.roundtrip = Some(roundtrip);
         }
         ReleaseRequest::ValidateTidas { input_dir } => {
-            let validation = validate_tree(input_dir, ReleaseDataFormat::Tidas, runtime)?;
+            let validation = validate_tree(input_dir, ReleaseDataFormat::Tidas, None, runtime)?;
             report.ok = validation.summary.ok;
             report.validation = Some(validation);
         }
         ReleaseRequest::ValidateIlcd { input_dir } => {
-            let validation = validate_tree(input_dir, ReleaseDataFormat::Ilcd, runtime)?;
+            let validation = validate_tree(input_dir, ReleaseDataFormat::Ilcd, None, runtime)?;
             report.ok = validation.summary.ok;
             report.validation = Some(validation);
         }
@@ -288,11 +289,13 @@ pub fn run_release(
             tidas_dir,
             dataset_index,
             output_dir,
+            issue_spool,
         } => {
             report.build = Some(build_packages(
                 tidas_dir,
                 dataset_index,
                 output_dir,
+                issue_spool.as_deref(),
                 runtime,
             )?);
         }
@@ -304,11 +307,12 @@ pub fn run_release(
 fn validate_tree(
     input_dir: &std::path::Path,
     format: ReleaseDataFormat,
+    issue_spool: Option<&std::path::Path>,
     runtime: &ReleaseRuntime,
 ) -> Result<ReleaseValidationReportV1, ReleaseError> {
     let request = tidas_validation::ValidationRequest {
         input_dir: input_dir.to_path_buf(),
-        issue_spool: None,
+        issue_spool: issue_spool.map(std::path::Path::to_path_buf),
         cancellation: runtime.cancellation.clone(),
         memory_budget: runtime.memory_budget.clone(),
         queue_capacity: runtime.queue_capacity,
@@ -328,12 +332,24 @@ fn build_packages(
     tidas_dir: &std::path::Path,
     dataset_index: &std::path::Path,
     output_dir: &std::path::Path,
+    issue_spool: Option<&std::path::Path>,
     runtime: &ReleaseRuntime,
 ) -> Result<ReleaseBuildReportV1, ReleaseError> {
-    let tidas_validation = validate_tree(tidas_dir, ReleaseDataFormat::Tidas, runtime)?;
-    if !tidas_validation.summary.ok {
-        return Err(ReleaseError::ValidationIssues(ReleaseDataFormat::Tidas));
+    if let Some(path) = issue_spool
+        && path.exists()
+    {
+        return Err(ReleaseError::IssueSpoolExists(path.to_path_buf()));
     }
+    let tidas_validation =
+        validate_tree(tidas_dir, ReleaseDataFormat::Tidas, issue_spool, runtime)?;
+    if !tidas_validation.summary.ok {
+        return Err(ReleaseError::ValidationIssues {
+            format: ReleaseDataFormat::Tidas,
+            summary: Box::new(tidas_validation.summary),
+            issue_spool: issue_spool.map(std::path::Path::to_path_buf),
+        });
+    }
+    remove_successful_spool(issue_spool)?;
 
     let index = index::DatasetIndex::load(dataset_index, tidas_dir, runtime)?;
     let (unit_entries, unit_report) =
@@ -345,10 +361,15 @@ fn build_packages(
     let staging = transaction::StagedDirectory::new(output_dir)?;
     let ilcd_dir = staging.path().join("ilcd");
     let conversion = conversion::convert_tidas_to_ilcd(tidas_dir, &ilcd_dir, runtime)?;
-    let ilcd_validation = validate_tree(&ilcd_dir, ReleaseDataFormat::Ilcd, runtime)?;
+    let ilcd_validation = validate_tree(&ilcd_dir, ReleaseDataFormat::Ilcd, issue_spool, runtime)?;
     if !ilcd_validation.summary.ok {
-        return Err(ReleaseError::ValidationIssues(ReleaseDataFormat::Ilcd));
+        return Err(ReleaseError::ValidationIssues {
+            format: ReleaseDataFormat::Ilcd,
+            summary: Box::new(ilcd_validation.summary),
+            issue_spool: issue_spool.map(std::path::Path::to_path_buf),
+        });
     }
+    remove_successful_spool(issue_spool)?;
     let roundtrip = conversion::semantic_roundtrip(tidas_dir, &ilcd_dir, runtime)?;
     if !roundtrip.ok {
         return Err(ReleaseError::SemanticRoundtripIssues {
@@ -416,6 +437,17 @@ fn build_packages(
     })
 }
 
+fn remove_successful_spool(issue_spool: Option<&std::path::Path>) -> Result<(), ReleaseError> {
+    let Some(path) = issue_spool else {
+        return Ok(());
+    };
+    match std::fs::remove_file(path) {
+        Ok(()) => Ok(()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(ReleaseError::Io(error)),
+    }
+}
+
 #[derive(Debug, Error)]
 pub enum ReleaseError {
     #[error("release queue capacity must be greater than zero")]
@@ -466,8 +498,14 @@ pub enum ReleaseError {
     OrderingSchemaReference(String),
     #[error("target eILCD ordering schema reference cycle: {0}")]
     OrderingSchemaCycle(String),
-    #[error("release validation found issues in the {0:?} tree")]
-    ValidationIssues(ReleaseDataFormat),
+    #[error("release validation found issues in the {format:?} tree")]
+    ValidationIssues {
+        format: ReleaseDataFormat,
+        summary: Box<ValidationSummaryV1>,
+        issue_spool: Option<PathBuf>,
+    },
+    #[error("release issue spool already exists: {0}")]
+    IssueSpoolExists(PathBuf),
     #[error("semantic round-trip found {count} mismatches")]
     SemanticRoundtripIssues { count: u64 },
     #[error("generated release path is invalid")]

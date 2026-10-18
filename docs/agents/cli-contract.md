@@ -320,6 +320,7 @@ tidas release build-packages \
   --tidas-dir <CANONICAL_DIR> \
   --dataset-index <CANONICAL_INDEX.json> \
   --output-dir <RELEASE_DIR> \
+  [--issue-spool <ISSUES.ndjson>] \
   --format json
 
 tidas release validate-closure \
@@ -357,6 +358,13 @@ profile-containment proof. Success atomically replaces `RELEASE_DIR` with
 exactly four stored ZIPs: TIDAS and eILCD for each profile. Members are sorted
 and use the DOS epoch timestamp and Unix `0644` mode. Failure or cancellation
 preserves an existing output directory.
+
+When `--issue-spool` is supplied, validation writes its complete deterministic
+issue stream to that NDJSON path. A failing build retains the spool and reports
+it in `artifacts` with `media_type: application/x-ndjson`, `sha256`, and
+`bytes`; the failure summary carries the validation counts and spool summary.
+The path must not already exist, and a successful build removes the spool so
+only failure evidence is retained.
 
 The operation summary contains one `release` member conforming to
 `tidas.release-report.v1`. Full result sets are represented by deterministic

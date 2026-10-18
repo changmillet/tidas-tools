@@ -120,6 +120,7 @@ fn release_report(arguments: &ReleaseArgs, execution: &ExecutionContext) -> Oper
             tidas_dir: arguments.tidas_dir.clone(),
             dataset_index: arguments.dataset_index.clone(),
             output_dir: arguments.output_dir.clone(),
+            issue_spool: arguments.issue_spool.clone(),
         },
         ReleaseCommand::ConvertIlcd(arguments) => ReleaseRequest::ConvertIlcd {
             input_dir: arguments.input_dir.clone(),
@@ -231,9 +232,9 @@ fn completed_release_report(release: tidas_release::ReleaseReportV1) -> Operatio
 
 fn failed_release_report(error: &ReleaseError) -> OperationReportV1 {
     let (exit_class, code) = match error {
-        ReleaseError::ZeroQueueCapacity | ReleaseError::OutputInsideInput(_) => {
-            (ExitClass::Usage, "invalid_release_request")
-        }
+        ReleaseError::ZeroQueueCapacity
+        | ReleaseError::OutputInsideInput(_)
+        | ReleaseError::IssueSpoolExists(_) => (ExitClass::Usage, "invalid_release_request"),
         ReleaseError::DatasetIndexInvalid(_)
         | ReleaseError::DatasetIndexSchemaUnsupported(_)
         | ReleaseError::DatasetIndexEmpty
@@ -246,7 +247,7 @@ fn failed_release_report(error: &ReleaseError) -> OperationReportV1 {
         | ReleaseError::ReferenceClosureMissing(_)
         | ReleaseError::StandaloneMissingUnitClosure(_)
         | ReleaseError::DatasetJson { .. }
-        | ReleaseError::ValidationIssues(_)
+        | ReleaseError::ValidationIssues { .. }
         | ReleaseError::SemanticRoundtripIssues { .. } => {
             (ExitClass::DataIssues, "release_input_invalid")
         }
@@ -274,7 +275,27 @@ fn failed_release_report(error: &ReleaseError) -> OperationReportV1 {
         | ReleaseError::PathOutsideRoot(_)
         | ReleaseError::Symlink(_) => (ExitClass::DataIssues, "release_input_invalid"),
     };
-    OperationReportV1::failed(CommandNameV1::Release, exit_class, code, error.to_string())
+    let mut report =
+        OperationReportV1::failed(CommandNameV1::Release, exit_class, code, error.to_string());
+    if let ReleaseError::ValidationIssues {
+        summary,
+        issue_spool,
+        ..
+    } = error
+    {
+        if let Ok(value) = serde_json::to_value(summary.as_ref()) {
+            report.summary.insert("validation".to_owned(), value);
+        }
+        if let (Some(path), Some(spool)) = (issue_spool.as_ref(), summary.issue_spool.as_ref()) {
+            report.artifacts.push(ArtifactRefV1 {
+                path: path.to_string_lossy().into_owned(),
+                media_type: "application/x-ndjson".to_owned(),
+                sha256: Some(spool.sha256.clone()),
+                bytes: Some(spool.bytes),
+            });
+        }
+    }
+    report
 }
 
 fn classify_release_conversion_error(error: &ConversionError) -> (ExitClass, &'static str) {

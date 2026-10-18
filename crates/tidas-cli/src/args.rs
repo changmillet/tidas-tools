@@ -414,6 +414,9 @@ pub struct ReleaseBuildArgs {
     /// Directory containing exactly four published ZIPs after success.
     #[arg(long, value_name = "DIR")]
     pub output_dir: PathBuf,
+    /// Persist validation issues as NDJSON when the build fails.
+    #[arg(long, value_name = "PATH")]
+    pub issue_spool: Option<PathBuf>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, clap::Args)]

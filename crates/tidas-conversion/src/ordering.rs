@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use quick_xml::events::{BytesStart, Event};
 use quick_xml::{Reader, XmlVersion};
+use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use tidas_assets::{AssetKind, bundled_assets};
 
@@ -9,6 +10,43 @@ use crate::ConversionError;
 
 const EILCD_SCHEMA_PREFIX: &str = "assets/eilcd/schemas/";
 const COMMON_NS: &str = "http://lca.jrc.it/ILCD/Common";
+pub const MAX_REPORTED_UNSUPPORTED_ELEMENTS: usize = 200;
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct UnsupportedElementV1 {
+    pub path: String,
+    pub element: String,
+}
+
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
+pub struct OrderingDiagnostics {
+    pub unsupported_elements: Vec<UnsupportedElementV1>,
+    pub unsupported_element_count: u64,
+}
+
+impl OrderingDiagnostics {
+    fn record(&mut self, path: &str, element: &str) {
+        self.unsupported_element_count += 1;
+        if self.unsupported_elements.len() < MAX_REPORTED_UNSUPPORTED_ELEMENTS {
+            self.unsupported_elements.push(UnsupportedElementV1 {
+                path: path.to_owned(),
+                element: element.to_owned(),
+            });
+        }
+    }
+
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.unsupported_element_count == 0
+    }
+
+    #[must_use]
+    pub fn truncated(&self) -> bool {
+        self.unsupported_element_count
+            > u64::try_from(self.unsupported_elements.len()).unwrap_or(u64::MAX)
+    }
+}
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 struct QName {
@@ -86,8 +124,17 @@ impl IlcdSchemaOrderer {
     pub fn order_document(
         &self,
         document: &Value,
-        _category: &str,
+        category: &str,
     ) -> Result<Value, ConversionError> {
+        self.order_document_reporting(document, category)
+            .map(|(ordered, _)| ordered)
+    }
+
+    pub fn order_document_reporting(
+        &self,
+        document: &Value,
+        _category: &str,
+    ) -> Result<(Value, OrderingDiagnostics), ConversionError> {
         let object = document
             .as_object()
             .ok_or_else(|| ConversionError::OrderingSchemaMissing("JSON root object".to_owned()))?;
@@ -107,14 +154,24 @@ impl IlcdSchemaOrderer {
             return Err(ConversionError::OrderingSchemaMissing(root_name.clone()));
         }
         let (qname, (schema, namespaces)) = candidates[0];
+        let mut diagnostics = OrderingDiagnostics::default();
         let mut ordered = Map::new();
         ordered.insert(
             root_name.clone(),
-            self.order_element(value, qname, schema, namespaces, &mut BTreeSet::new())?,
+            self.order_element(
+                value,
+                qname,
+                schema,
+                namespaces,
+                &mut BTreeSet::new(),
+                root_name,
+                &mut diagnostics,
+            )?,
         );
-        Ok(Value::Object(ordered))
+        Ok((Value::Object(ordered), diagnostics))
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn order_element(
         &self,
         value: &Value,
@@ -122,11 +179,23 @@ impl IlcdSchemaOrderer {
         element: &XsdNode,
         namespaces: &BTreeMap<String, String>,
         resolving: &mut BTreeSet<QName>,
+        path: &str,
+        diagnostics: &mut OrderingDiagnostics,
     ) -> Result<Value, ConversionError> {
         if let Value::Array(items) = value {
             return items
                 .iter()
-                .map(|item| self.order_element(item, element_name, element, namespaces, resolving))
+                .map(|item| {
+                    self.order_element(
+                        item,
+                        element_name,
+                        element,
+                        namespaces,
+                        resolving,
+                        path,
+                        diagnostics,
+                    )
+                })
                 .collect::<Result<Vec<_>, _>>()
                 .map(Value::Array);
         }
@@ -138,24 +207,39 @@ impl IlcdSchemaOrderer {
         for (key, child_name, child_schema, child_namespaces) in children {
             if let Some(child_value) = object.get(&key) {
                 ordered.insert(
-                    key,
+                    key.clone(),
                     self.order_element(
                         child_value,
                         &child_name,
                         &child_schema,
                         &child_namespaces,
                         resolving,
+                        &format!("{path}/{key}"),
+                        diagnostics,
                     )?,
                 );
             }
         }
-        let mut remaining = object
-            .keys()
-            .filter(|name| !ordered.contains_key(*name))
-            .collect::<Vec<_>>();
+        let allows_any =
+            self.content_allows_any(element_name, element, namespaces, &mut BTreeSet::new())?;
+        let mut remaining = Vec::new();
+        for name in object.keys() {
+            if ordered.contains_key(name) || name.starts_with('@') || name.starts_with('#') {
+                continue;
+            }
+            remaining.push(name.clone());
+            if !allows_any {
+                diagnostics.record(path, name);
+            }
+        }
         remaining.sort();
         for name in remaining {
-            ordered.insert(name.clone(), object[name].clone());
+            ordered.insert(name.clone(), object[&name].clone());
+        }
+        for name in object.keys() {
+            if name.starts_with('@') || name.starts_with('#') {
+                ordered.insert(name.clone(), object[name].clone());
+            }
         }
         Ok(Value::Object(ordered))
     }
@@ -242,6 +326,89 @@ impl IlcdSchemaOrderer {
             }
         }
         Ok(result)
+    }
+
+    fn content_allows_any(
+        &self,
+        element_name: &QName,
+        element: &XsdNode,
+        namespaces: &BTreeMap<String, String>,
+        resolving: &mut BTreeSet<QName>,
+    ) -> Result<bool, ConversionError> {
+        if !resolving.insert(element_name.clone()) {
+            return Ok(false);
+        }
+        let result = if let Some(complex) = child(element, "complexType") {
+            self.complex_allows_any(complex, namespaces)
+        } else if let Some(type_name) = element.attributes.get("type") {
+            let qname = resolve_qname(type_name, namespaces, &element_name.namespace)?;
+            match self.complex_types.get(&qname) {
+                Some((complex, type_namespaces)) => {
+                    self.complex_allows_any(complex, type_namespaces)
+                }
+                None => Ok(false),
+            }
+        } else if let Some(reference) = element.attributes.get("ref") {
+            let qname = resolve_qname(reference, namespaces, &element_name.namespace)?;
+            let (target, target_namespaces) = self
+                .elements
+                .get(&qname)
+                .ok_or_else(|| ConversionError::OrderingSchemaReference(reference.clone()))?;
+            self.content_allows_any(&qname, target, target_namespaces, resolving)
+        } else {
+            Ok(false)
+        };
+        resolving.remove(element_name);
+        result
+    }
+
+    fn complex_allows_any(
+        &self,
+        complex: &XsdNode,
+        namespaces: &BTreeMap<String, String>,
+    ) -> Result<bool, ConversionError> {
+        if let Some(content) = child(complex, "complexContent")
+            && let Some(extension) = child(content, "extension")
+        {
+            let mut allowed = false;
+            if let Some(base) = extension.attributes.get("base") {
+                let qname = resolve_qname(base, namespaces, "")?;
+                if let Some((base_type, base_namespaces)) = self.complex_types.get(&qname) {
+                    allowed = self.complex_allows_any(base_type, base_namespaces)?;
+                }
+            }
+            allowed |= self.particle_allows_any(extension, namespaces)?;
+            return Ok(allowed);
+        }
+        self.particle_allows_any(complex, namespaces)
+    }
+
+    fn particle_allows_any(
+        &self,
+        node: &XsdNode,
+        namespaces: &BTreeMap<String, String>,
+    ) -> Result<bool, ConversionError> {
+        let mut allowed = false;
+        for particle in &node.children {
+            match particle.name.as_str() {
+                "sequence" | "choice" | "all" => {
+                    allowed |= self.particle_allows_any(particle, namespaces)?;
+                }
+                "group" => {
+                    if let Some(reference) = particle.attributes.get("ref") {
+                        let qname = resolve_qname(reference, namespaces, "")?;
+                        let (group, group_namespaces) =
+                            self.groups.get(&qname).ok_or_else(|| {
+                                ConversionError::OrderingSchemaReference(reference.clone())
+                            })?;
+                        allowed |= self.particle_allows_any(group, group_namespaces)?;
+                    }
+                }
+                "any" => allowed = true,
+                _ => {}
+            }
+        }
+        Ok(allowed)
     }
 
     fn resolve_element(
@@ -377,5 +544,65 @@ fn json_key(name: &QName) -> String {
         format!("common:{}", name.local)
     } else {
         name.local.clone()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+
+    #[test]
+    fn target_elements_missing_from_the_content_model_are_reported() {
+        let orderer = IlcdSchemaOrderer::from_bundled_assets().unwrap();
+        let document = json!({
+            "processDataSet": {
+                "exchanges": {
+                    "exchange": {
+                        "generalComment": {"@xml:lang": "en", "#text": "comment"},
+                        "referenceToDataSource": {"@refObjectId": "source"}
+                    }
+                }
+            }
+        });
+        let (_, diagnostics) = orderer
+            .order_document_reporting(&document, "processes")
+            .unwrap();
+        assert_eq!(diagnostics.unsupported_element_count, 1);
+        assert_eq!(
+            diagnostics.unsupported_elements[0].element,
+            "referenceToDataSource"
+        );
+        assert!(
+            diagnostics.unsupported_elements[0]
+                .path
+                .ends_with("/exchange")
+        );
+    }
+
+    #[test]
+    fn eilcd_data_source_collection_is_not_reported() {
+        let orderer = IlcdSchemaOrderer::from_bundled_assets().unwrap();
+        let document = json!({
+            "processDataSet": {
+                "exchanges": {
+                    "exchange": {
+                        "referencesToDataSource": {
+                            "referenceToDataSource": {"@refObjectId": "source"}
+                        }
+                    }
+                }
+            }
+        });
+        let (sorted_document, diagnostics) = orderer
+            .order_document_reporting(&document, "processes")
+            .unwrap();
+        assert!(diagnostics.is_empty());
+        assert!(
+            sorted_document
+                .pointer("/processDataSet/exchanges/exchange/referencesToDataSource")
+                .is_some()
+        );
     }
 }

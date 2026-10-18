@@ -172,6 +172,18 @@ fn adapt_object(
     category: &str,
     recovery: &mut RecoveryBuilder,
 ) {
+    if category == "processes"
+        && is_process_exchange_object(path)
+        && object.contains_key("referenceToDataSource")
+    {
+        let original = Value::Object(object.clone());
+        recovery.record(path, &original, "map-process-exchange-data-source");
+        if let Some(value) = object.remove("referenceToDataSource") {
+            let mut wrapper = Map::new();
+            wrapper.insert("referenceToDataSource".to_owned(), value);
+            object.insert("referencesToDataSource".to_owned(), Value::Object(wrapper));
+        }
+    }
     adapt_reference_uri(object, path, recovery);
     merge_duplicate_languages(object, path, recovery);
 
@@ -503,6 +515,20 @@ fn adapt_lifecycle_model_object(
             );
         }
     }
+    if path.ends_with("/publicationAndOwnership") {
+        for key in [
+            "common:referenceToRegistrationAuthority",
+            "referenceToRegistrationAuthority",
+        ] {
+            remove_key(
+                object,
+                path,
+                key,
+                "omit-unsupported-lifecycle-model-registration-authority",
+                recovery,
+            );
+        }
+    }
     if path.ends_with("/name") && object.contains_key("flowProperties") {
         let original = Value::Object(object.clone());
         recovery.record(path, &original, "map-lifecycle-model-flow-properties");
@@ -823,6 +849,73 @@ mod tests {
     use serde_json::json;
 
     use super::*;
+
+    #[test]
+    fn process_exchange_data_source_is_projected_into_the_eilcd_collection() {
+        let source = json!({
+            "processDataSet": {
+                "exchanges": {
+                    "exchange": {
+                        "@dataSetInternalID": "1",
+                        "generalComment": {"@xml:lang": "en", "#text": "comment"},
+                        "referenceToDataSource": {
+                            "@refObjectId": "acf91156-39fd-4b1f-9a95-915e12a8008e",
+                            "@version": "01.01.000"
+                        }
+                    }
+                }
+            }
+        });
+        let projection = project_tidas_to_eilcd(&source, "processes").unwrap();
+        assert_eq!(
+            projection
+                .document
+                .pointer("/processDataSet/exchanges/exchange/referencesToDataSource/referenceToDataSource/@refObjectId"),
+            Some(&Value::String(
+                "acf91156-39fd-4b1f-9a95-915e12a8008e".to_owned()
+            ))
+        );
+        assert!(
+            projection
+                .document
+                .pointer("/processDataSet/exchanges/exchange/referenceToDataSource")
+                .is_none()
+        );
+        let mut restored = projection.document;
+        restore_tidas_projection(&mut restored, projection.recovery.as_ref().unwrap()).unwrap();
+        assert_eq!(restored, source);
+    }
+
+    #[test]
+    fn lifecycle_model_registration_authority_is_omitted_and_recoverable() {
+        let source = json!({
+            "lifeCycleModelDataSet": {
+                "administrativeInformation": {
+                    "publicationAndOwnership": {
+                        "common:dataSetVersion": "01.00.000",
+                        "common:referenceToRegistrationAuthority": {
+                            "@refObjectId": "e06b9dd3-6c61-4b0d-9b79-701b97351d60"
+                        }
+                    }
+                }
+            }
+        });
+        let projection = project_tidas_to_eilcd(&source, "lifecyclemodels").unwrap();
+        assert!(
+            projection
+                .document
+                .pointer("/lifeCycleModelDataSet/administrativeInformation/publicationAndOwnership/common:referenceToRegistrationAuthority")
+                .is_none()
+        );
+        let recovery = projection.recovery.as_ref().unwrap();
+        assert_eq!(
+            recovery.adaptations["omit-unsupported-lifecycle-model-registration-authority"],
+            1
+        );
+        let mut restored = projection.document;
+        restore_tidas_projection(&mut restored, recovery).unwrap();
+        assert_eq!(restored, source);
+    }
 
     #[test]
     fn duplicate_languages_are_projected_and_exact_fragments_are_recoverable() {

@@ -293,6 +293,41 @@ fn release_validation_data_findings_use_the_data_issues_exit_class() {
 }
 
 #[test]
+fn failed_release_build_reports_the_requested_issue_spool() {
+    let directory = tempfile::tempdir().unwrap();
+    let input = directory.path().join("input");
+    fs::create_dir_all(input.join("sources")).unwrap();
+    fs::write(input.join("sources/bad.json"), b"{not-json").unwrap();
+    let spool = directory.path().join("validation-issues.ndjson");
+    let output_dir = directory.path().join("release");
+    let index = directory.path().join("canonical-dataset-index.json");
+    let (output, payload) = json_output(&[
+        "release",
+        "build-packages",
+        "--tidas-dir",
+        input.to_str().unwrap(),
+        "--dataset-index",
+        index.to_str().unwrap(),
+        "--output-dir",
+        output_dir.to_str().unwrap(),
+        "--issue-spool",
+        spool.to_str().unwrap(),
+        "--format",
+        "json",
+    ]);
+    assert_eq!(output.status.code(), Some(2));
+    assert!(output.stderr.is_empty());
+    assert_eq!(payload["exit_class"], "data-issues");
+    assert_eq!(payload["summary"]["validation"]["issue_count"], 1);
+    let artifacts = payload["artifacts"].as_array().unwrap();
+    assert_eq!(artifacts.len(), 1);
+    assert_eq!(artifacts[0]["media_type"], "application/x-ndjson");
+    assert_eq!(artifacts[0]["path"], spool.to_str().unwrap());
+    assert!(artifacts[0]["sha256"].is_string());
+    assert!(spool.is_file());
+}
+
+#[test]
 fn export_help_exposes_native_bounded_and_credential_safe_contract() {
     let output = tidas().args(["export", "--help"]).output().unwrap();
     assert!(output.status.success());
