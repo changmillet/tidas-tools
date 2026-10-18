@@ -33,8 +33,8 @@ checkPaths:
   - .github/actions/native-xml/**
   - .githooks/pre-push
 lastReviewedAt: 2026-10-18
-lastReviewedCommit: a20c016775a4d6f9180c3c0cfc2dd19d9e9ff59f
-lastReviewedNote: "Reviewed Toolkit #260 against current Main: workspace version advanced to 0.3.5 after the #258 conversion and issue-spool fix; ownership, platform, asset, contract and release guards are unchanged; local Rust qualification passes."
+lastReviewedCommit: b2a1ff5967c952d798cfc8458d50537e983ca028
+lastReviewedNote: "Reviewed Toolkit #261 native release request v0.3.5 against current Main. The request binds the exact 0.3.5 version commit; CI, release, distribution and Rust-only guards are unchanged and the release workflow remains the sole tag/dispatch authority."
 related:
   - .docpact/config.yaml
   - docs/agents/repo-architecture.md
