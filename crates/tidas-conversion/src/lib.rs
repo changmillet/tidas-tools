@@ -938,7 +938,7 @@ mod tests {
     use std::collections::BTreeMap;
 
     use jsonschema::error::ValidationErrorKind;
-    use jsonschema::{Resource, ValidationError};
+    use jsonschema::{Registry, ValidationError};
     use serde_json::{Value, json};
     use tempfile::tempdir;
     use tidas_assets::{AssetKind, bundled_assets};
@@ -1031,14 +1031,17 @@ mod tests {
             "required": ["review"],
             "$defs": process_schema["$defs"].clone()
         });
-        let resources = schemas.iter().map(|(filename, schema)| {
-            (
-                format!("{SCHEMA_BASE_URI}{filename}"),
-                Resource::from_contents(schema.clone()),
-            )
-        });
+        let resources = schemas
+            .iter()
+            .map(|(filename, schema)| (format!("{SCHEMA_BASE_URI}{filename}"), schema.clone()));
+        let registry = Registry::new()
+            .extend(resources)
+            .unwrap()
+            .prepare()
+            .unwrap();
         jsonschema::draft7::options()
-            .with_resources(resources)
+            .with_registry(&registry)
+            .offline()
             .build(&focused_schema)
             .unwrap()
     }

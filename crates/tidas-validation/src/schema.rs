@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::fmt::Write as _;
 
 use jsonschema::error::ValidationErrorKind;
-use jsonschema::{Resource, Validator};
+use jsonschema::{Registry, Validator};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -110,13 +110,19 @@ impl SchemaCatalog {
             .get(&filename)
             .ok_or_else(|| SchemaError::MissingCategory(filename.clone()))?;
         let resources = self.schemas.iter().map(|(resource_name, schema)| {
-            (
-                format!("{SCHEMA_BASE_URI}{resource_name}"),
-                Resource::from_contents(schema.clone()),
-            )
+            (format!("{SCHEMA_BASE_URI}{resource_name}"), schema.clone())
         });
+        let registry = Registry::new()
+            .extend(resources)
+            .and_then(jsonschema::RegistryBuilder::prepare)
+            .map_err(|source| SchemaError::Compile {
+                filename: filename.clone(),
+                reason: source.to_string(),
+            })?;
         let validator = jsonschema::draft7::options()
-            .with_resources(resources)
+            .with_base_uri(format!("{SCHEMA_BASE_URI}{filename}"))
+            .with_registry(&registry)
+            .offline()
             .with_format("cas-number", is_valid_cas_number)
             .should_validate_formats(true)
             .build(root)
@@ -299,6 +305,7 @@ const fn schema_keyword(kind: &ValidationErrorKind) -> &'static str {
         ValidationErrorKind::AdditionalProperties { .. } => "additionalProperties",
         ValidationErrorKind::AnyOf { .. } => "anyOf",
         ValidationErrorKind::BacktrackLimitExceeded { .. }
+        | ValidationErrorKind::RegexEngineFailure { .. }
         | ValidationErrorKind::Pattern { .. } => "pattern",
         ValidationErrorKind::Constant { .. } => "const",
         ValidationErrorKind::Contains => "contains",
@@ -409,6 +416,107 @@ mod tests {
         for category in SUPPORTED_TIDAS_CATEGORIES {
             catalog.validator(category).unwrap();
         }
+    }
+
+    #[test]
+    fn registry_resolves_bundled_refs_and_rejects_unregistered_locations() {
+        let root_name = "tidas_contacts.json";
+        let root_uri = format!("{SCHEMA_BASE_URI}{root_name}");
+        let catalog_for = |reference: &str, extra: Option<Value>| {
+            let mut schemas = BTreeMap::from([(
+                root_name.to_owned(),
+                json!({"$id": root_uri, "$schema": "http://json-schema.org/draft-07/schema#", "$ref": reference}),
+            )]);
+            if let Some(schema) = extra {
+                schemas.insert("shared.json".to_owned(), schema);
+            }
+            SchemaCatalog { schemas }
+        };
+        let validator = catalog_for("shared.json", Some(json!({"type": "string"})))
+            .validator(TidasCategory::Contacts)
+            .unwrap();
+        assert_eq!(validator.issues(&json!("valid"), "fixture.json").count(), 0);
+        let bad = json!(42);
+        let issues = validator.issues(&bad, "fixture.json").collect::<Vec<_>>();
+        assert_eq!(issues.len(), 1);
+        assert_eq!(issues[0].context["schema_keyword"], "type");
+
+        let file = tempfile::NamedTempFile::new().unwrap();
+        std::fs::write(file.path(), br#"{"type":"string"}"#).unwrap();
+        let file_uri = format!(
+            "file:///{}",
+            file.path()
+                .display()
+                .to_string()
+                .replace('\\', "/")
+                .trim_start_matches('/')
+        );
+        for reference in [
+            "missing.json",
+            "https://example.invalid/schema.json",
+            &file_uri,
+        ] {
+            assert!(
+                matches!(
+                    catalog_for(reference, None).validator(TidasCategory::Contacts),
+                    Err(SchemaError::Compile { .. })
+                ),
+                "unregistered resource must not be loaded: {reference}"
+            );
+        }
+    }
+
+    #[test]
+    fn shared_enum_and_const_errors_keep_bounded_structured_diagnostics() {
+        let schema = json!({
+            "type": "object",
+            "properties": {"choice": {"enum": ["a", "b"]}, "fixed": {"const": "expected"}},
+        });
+        let validator = TidasValidator {
+            category: TidasCategory::Contacts,
+            validator: jsonschema::draft7::options()
+                .offline()
+                .build(&schema)
+                .unwrap(),
+        };
+        let instance = json!({"choice": "敏感".repeat(100_000), "fixed": "wrong"});
+        let issues = validator
+            .issues(&instance, "fixture.json")
+            .collect::<Vec<_>>();
+        assert_eq!(issues.len(), 2);
+        for (keyword, path) in [
+            ("enum", "/properties/choice/enum"),
+            ("const", "/properties/fixed/const"),
+        ] {
+            let issue = issues
+                .iter()
+                .find(|issue| issue.context["schema_keyword"] == keyword)
+                .unwrap();
+            assert_eq!(issue.context["schema_path"], path);
+            assert!(issue.message.len() <= MAX_SCHEMA_MESSAGE_BYTES);
+            assert!(!issue.message.contains("敏感"));
+        }
+    }
+
+    #[test]
+    fn regex_evaluation_failure_is_reported_as_a_pattern_issue() {
+        let schema = json!({"type": "string", "pattern": "(?<=ab)c"});
+        let validator = TidasValidator {
+            category: TidasCategory::Contacts,
+            validator: jsonschema::draft7::options()
+                .with_pattern_options(jsonschema::PatternOptions::fancy_regex().backtrack_limit(1))
+                .offline()
+                .build(&schema)
+                .unwrap(),
+        };
+        let instance = json!("abc");
+        let issues = validator
+            .issues(&instance, "fixture.json")
+            .collect::<Vec<_>>();
+        assert_eq!(issues.len(), 1);
+        assert_eq!(issues[0].context["schema_keyword"], "pattern");
+        assert_eq!(issues[0].context["schema_path"], "/pattern");
+        assert!(issues[0].message.contains("backtracking"));
     }
 
     #[test]
@@ -556,14 +664,18 @@ mod tests {
                 if let Some(definitions) = catalog.schemas[filename].get("$defs") {
                     review["$defs"] = definitions.clone();
                 }
-                let resources = catalog.schemas.iter().map(|(name, schema)| {
-                    (
-                        format!("{SCHEMA_BASE_URI}{name}"),
-                        Resource::from_contents(schema.clone()),
-                    )
-                });
+                let resources = catalog
+                    .schemas
+                    .iter()
+                    .map(|(name, schema)| (format!("{SCHEMA_BASE_URI}{name}"), schema.clone()));
+                let registry = Registry::new()
+                    .extend(resources)
+                    .unwrap()
+                    .prepare()
+                    .unwrap();
                 let validator = jsonschema::draft7::options()
-                    .with_resources(resources)
+                    .with_registry(&registry)
+                    .offline()
                     .build(&review)
                     .unwrap();
                 let completed = json!({

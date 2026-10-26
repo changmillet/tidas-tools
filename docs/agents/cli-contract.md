@@ -28,8 +28,8 @@ checkPaths:
   - README.md
   - README_CN.md
 lastReviewedAt: 2026-10-26
-lastReviewedCommit: f70365fd544ce34a8aab97bdbc45c393809c5b29
-lastReviewedNote: "Reviewed Toolkit #265: development validation uses affected behavior and reproducible risk-based scale probes. Private historical ZIP availability is not a development or merge prerequisite. CLI behavior, runtime memory guarantees, routing, ownership and release gates are unchanged."
+lastReviewedCommit: 8c55fafd49a0996a8f31b64bb9d345bbb75a4dc2
+lastReviewedNote: "Reviewed Toolkit #267 / original PR251: jsonschema 0.60.1 uses an explicit prepared registry, canonical category base URI and offline compilation; bounded error adapters cover regex failures and shared enum/const values. Portable resource/diagnostic regressions and generated issue-volume proof replace no existing gate. The two newly split jsonschema crates retain archive/checksum/VCS-bound upstream license evidence for native qualification. CLI, assets, ownership and release/publication authority are unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
