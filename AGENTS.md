@@ -32,9 +32,9 @@ checkPaths:
   - .github/workflows/**
   - .github/actions/native-xml/**
   - .githooks/pre-push
-lastReviewedAt: 2026-10-18
-lastReviewedCommit: b2a1ff5967c952d798cfc8458d50537e983ca028
-lastReviewedNote: "Reviewed Toolkit #261 native release request v0.3.5 against current Main. The request binds the exact 0.3.5 version commit; CI, release, distribution and Rust-only guards are unchanged and the release workflow remains the sole tag/dispatch authority."
+lastReviewedAt: 2026-10-26
+lastReviewedCommit: f70365fd544ce34a8aab97bdbc45c393809c5b29
+lastReviewedNote: "Reviewed Toolkit #265: development validation uses affected behavior and reproducible risk-based scale probes. Private historical ZIP availability is not a development or merge prerequisite. CLI behavior, runtime memory guarantees, routing, ownership and release gates are unchanged."
 related:
   - .docpact/config.yaml
   - docs/agents/repo-architecture.md
@@ -176,10 +176,14 @@ For workspace-tracked delivery, also follow the root workspace
   explicit Cargo target, and reject external VC runtime/XML imports before
   packaging. A development runner's installed redistributable is not proof of
   a self-contained release.
-- Performance and completeness tests run locally before any Worker-host proof.
-  The acceptance budgets are native schema validation within 60 seconds,
-  complete local package processing within 3 minutes, and peak RSS within
-  512 MiB.
+- Select validation by the affected behavior and risk. Baseline and relevant
+  functional regression tests remain required. Changes affecting throughput,
+  memory, streaming, cancellation or spooling need reproducible local scale
+  probes using repository fixtures or deterministic generators before any
+  Worker-host proof. A private historical package or a developer's filesystem
+  is not a development or merge prerequisite. Record fixture shape, commands,
+  environment and applicable budgets as described in
+  `docs/agents/repo-validation.md`.
 
 ## Canonical local validation
 

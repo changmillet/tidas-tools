@@ -28,9 +28,9 @@ checkPaths:
   - .github/actions/native-xml/**
   - .githooks/pre-push
   - scripts/**
-lastReviewedAt: 2026-10-18
-lastReviewedCommit: b2a1ff5967c952d798cfc8458d50537e983ca028
-lastReviewedNote: "Reviewed Toolkit #261 native release request v0.3.5 against current Main. The request binds the exact 0.3.5 version commit; CI, release, distribution and Rust-only guards are unchanged and the release workflow remains the sole tag/dispatch authority."
+lastReviewedAt: 2026-10-26
+lastReviewedCommit: f70365fd544ce34a8aab97bdbc45c393809c5b29
+lastReviewedNote: "Reviewed Toolkit #265: development validation uses affected behavior and reproducible risk-based scale probes. Private historical ZIP availability is not a development or merge prerequisite. CLI behavior, runtime memory guarantees, routing, ownership and release gates are unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

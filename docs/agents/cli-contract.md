@@ -27,9 +27,9 @@ checkPaths:
   - contracts/**
   - README.md
   - README_CN.md
-lastReviewedAt: 2026-10-18
-lastReviewedCommit: 74622220c4c0f181ee2cb8ceeccbaac53df43b2f
-lastReviewedNote: "Reviewed Toolkit #261 native release request v0.3.5 against current Main. The request binds the exact 0.3.5 version commit; CI, release, distribution and Rust-only guards are unchanged and the release workflow remains the sole tag/dispatch authority."
+lastReviewedAt: 2026-10-26
+lastReviewedCommit: f70365fd544ce34a8aab97bdbc45c393809c5b29
+lastReviewedNote: "Reviewed Toolkit #265: development validation uses affected behavior and reproducible risk-based scale probes. Private historical ZIP availability is not a development or merge prerequisite. CLI behavior, runtime memory guarantees, routing, ownership and release gates are unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
