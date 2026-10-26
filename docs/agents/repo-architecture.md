@@ -29,8 +29,8 @@ checkPaths:
   - .githooks/pre-push
   - scripts/**
 lastReviewedAt: 2026-10-26
-lastReviewedCommit: f70365fd544ce34a8aab97bdbc45c393809c5b29
-lastReviewedNote: "Reviewed Toolkit #265: development validation uses affected behavior and reproducible risk-based scale probes. Private historical ZIP availability is not a development or merge prerequisite. CLI behavior, runtime memory guarantees, routing, ownership and release gates are unchanged."
+lastReviewedCommit: 8c55fafd49a0996a8f31b64bb9d345bbb75a4dc2
+lastReviewedNote: "Reviewed Toolkit #267 / original PR251: jsonschema 0.60.1 uses an explicit prepared registry, canonical category base URI and offline compilation; bounded error adapters cover regex failures and shared enum/const values. Portable resource/diagnostic regressions and generated issue-volume proof replace no existing gate. CLI, assets, ownership and release/publication authority are unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -226,6 +226,15 @@ W9 splits the catalog into two source layers. The exact candidate-bound
 local rules. `tidas-rulesets` composes the runtime catalog from both at load
 time without an old mixed-file input. `tidas-asset-lock public-rules-check`
 independently verifies source identity, byte hashes, schemas, and composition.
+
+## Offline schema registry
+
+TIDAS schema validation prepares an explicit registry from the bundled schemas,
+then compiles each category with its canonical base URI and a borrowed registry.
+Registry preparation uses the non-fetching retriever; validator compilation is
+explicitly offline. Registered relative references resolve locally and missing
+HTTP/file references fail compilation. Regex evaluation failures remain schema
+findings with bounded diagnostics; they are never treated as valid input.
 
 ## XML/XSD/XSLT portability
 
