@@ -29,9 +29,9 @@ checkPaths:
   - .github/actions/native-xml/**
   - .githooks/pre-push
   - scripts/**
-lastReviewedAt: 2026-10-18
-lastReviewedCommit: b2a1ff5967c952d798cfc8458d50537e983ca028
-lastReviewedNote: "Reviewed Toolkit #261 native release request v0.3.5 against current Main. The request binds the exact 0.3.5 version commit; CI, release, distribution and Rust-only guards are unchanged and the release workflow remains the sole tag/dispatch authority."
+lastReviewedAt: 2026-10-26
+lastReviewedCommit: f70365fd544ce34a8aab97bdbc45c393809c5b29
+lastReviewedNote: "Reviewed Toolkit #265: development validation uses affected behavior and reproducible risk-based scale probes. Private historical ZIP availability is not a development or merge prerequisite. CLI behavior, runtime memory guarantees, routing, ownership and release gates are unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -107,11 +107,11 @@ toolchain and source-bound specification assets retain manual exact qualificatio
 | Change | Minimum local proof | Higher-risk proof |
 | --- | --- | --- |
 | CLI, contracts, or shared runtime | baseline; root and affected command help; deterministic JSON/version/completion; report/stdout separation; usage and exit-class tests | configuration precedence, cancellation, bounded queues, memory accounting, spool determinism, and all affected JSON Schema contracts |
-| conversion | focused conversion + CLI tests; both directions; representative category round-trips; schema-order/XSD proof with scrambled JSON members; envelope and projection-recovery sidecars; source-semantic hash proof plus native validation of reversed TIDAS; numeric Process reference and optional valid-until years and present empty LCI method recovery, including without a sidecar; reject edits to either projected year or deletion of the empty method before publication; tree hash; symlink, invalid XML, cancellation, budget, rollback | run the local package twice, validate every projected XML document and the reversed TIDAS package, recover every adapted TIDAS fragment, compare tree hashes, and record wall time/RSS |
+| conversion | focused conversion + CLI tests; both directions; representative category round-trips; schema-order/XSD proof with scrambled JSON members; envelope and projection-recovery sidecars; source-semantic hash proof plus native validation of reversed TIDAS; numeric Process reference and optional valid-until years and present empty LCI method recovery, including without a sidecar; reject edits to either projected year or deletion of the empty method before publication; tree hash; symlink, invalid XML, cancellation, budget, rollback | run a reproducible representative package twice, validate every projected XML document and the reversed TIDAS package, recover every adapted TIDAS fragment, compare tree hashes, and record wall time/RSS |
 | import | all supported format fixtures; native target validation; ILCD non-flow quantitative-reference regression with an elementary pollutant first and absent process type; bilingual Process/Source provenance, exact source linkage, exchange comments/IDs, and caveat-change sensitivity through TIDAS/eILCD projection plus actual reverse-conversion comparison of review-critical fields; untyped non-flow reference and missing, version-mismatched or URI-mismatched Source fail atomically; deterministic package/mapping/bundle hashes; malformed/unsupported input, cancellation, budget, atomic publication. Toolkit #224 owns complete independent validation of the reversed TIDAS package. | large exchange/issue-spool fixture with wall time/RSS and cross-root determinism |
 | export | focused crate/CLI tests; report schema; secret redaction; unsafe paths; cancellation/budget; version suffixes; deterministic ZIP; atomic replacement | disposable local PostgreSQL and S3-compatible fixtures twice, comparing archive bytes and membership |
-| release | closure/order/round-trip golden fixtures; missing/inexact reference failure; four deterministic ZIPs; native validation; cancellation/budget; atomic directory publication | run the local 237 MiB package twice, compare all four archives, and record wall time/RSS |
-| validation/batch/references | compile every bundled schema/XSD root offline; schema and semantic fixtures including internal keyrefs; complete TIDAS projection/XSD/recovery proof; explicit schema-only diagnostic behavior; oversized rejected-instance event below the 1 MiB frame ceiling; bounded issue spool; batch preflight/drift/final-event hash; extraction schema/roles; Windows x64 real-binary short/deep Unicode task-path parity for `--issues` and `--events` under the four-platform Rust CI matrix | local large-package validation twice, recording native time, projection/XSD/recovery time, peak RSS, cancellation, and spool hash |
+| release | closure/order/round-trip golden fixtures; missing/inexact reference failure; four deterministic ZIPs; native validation; cancellation/budget; atomic directory publication | run a reproducible representative package twice, compare all four archives, and record wall time/RSS |
+| validation/batch/references | compile every bundled schema/XSD root offline; schema and semantic fixtures including internal keyrefs; complete TIDAS projection/XSD/recovery proof; explicit schema-only diagnostic behavior; oversized rejected-instance event below the 1 MiB frame ceiling; bounded issue spool; batch preflight/drift/final-event hash; extraction schema/roles; Windows x64 real-binary short/deep Unicode task-path parity for `--issues` and `--events` under the four-platform Rust CI matrix | reproducible generated large-package validation twice when scale behavior is affected, recording native time, projection/XSD/recovery time, peak RSS, cancellation, and spool hash |
 | assets | baseline asset check; representative `git check-attr eol`; schema-local-reference and translation-parity tests | regenerate locks only after reviewing every changed path/hash; compare fingerprints twice |
 | public-specification pin | `tidas-asset-lock spec-check`; focused English/Chinese validation proving Process review accepts a singleton or ordered non-empty array, reports an invalid second item at index `1`, and Process/LCIA Method may omit `common:referenceToCompleteReviewReport`; confirm Lifecycle Model behavior and retained tools-owned methodologies, eILCD inputs, and validation indexes are unchanged | `spec-import` against the qualified archive: imported/authored/metadata partition checks, negative, rollback (failure after staging, not only input parsing), no-write check mode, repeated-import idempotency, manual drift detection, XML-to-JSON-to-XML repeated-review preservation, and `.crate` parity of the 39-file public subset |
 | W8 public-rule/profile composition | `tidas-asset-lock public-rules-check`; focused `tidas-assets` and `tidas-rulesets` tests; `tidas ruleset` JSON probes | exact-checkout `public-rules-sync`; stale identity, tampered bytes, unknown/duplicate IDs, incomplete ordering, and invalid profile references; compare rule IDs/order and toolkit policy with the pre-W9 baseline |
@@ -134,19 +134,40 @@ cannot tag, publish or change the data #33 Process. Source-built Windows CI and
 package smoke remain separate evidence, not substitutes for this installed
 archive replay.
 
-Scale proofs must run locally first. The canonical large package is outside
-Git:
+### Selecting scale proof
 
-```text
-/Users/biao/Code/lca-workspace/lca-workspace/_test_data/tidas-package-open_data-1784707539957.zip
-```
+Use the baseline and the affected rows above to select validation. Dependency
+updates need the baseline plus regressions for the behavior changed by the
+updated dependency. For example, a schema-engine update needs representative
+valid/invalid schema cases and diagnostics checks. Do not require a private
+historical ZIP merely because a dependency changed.
 
-Acceptance limits:
+Add local scale probes when throughput, memory, streaming, cancellation or
+spooling may be affected, including by a dependency update. Use checked-in
+non-sensitive fixtures or deterministic generators that another developer can
+run in a fresh checkout. Select document sizes, category/reference shapes and
+issue volume that exercise the affected behavior; retain the recipe/seed and
+commands in the PR. A small functional fixture alone does not establish scale
+behavior. Run repeatability probes twice and record input/output hashes,
+counts, wall time, peak RSS, toolchain and machine context. Run these probes
+locally before any Worker-host proof.
 
-- native schema validation: at most 60 seconds
-- unzip/hash/parse/validate/spool, excluding remote download: at most 3 minutes
-- peak RSS: at most 512 MiB
-- issue-detail memory must remain bounded even near 1.07 million issues
+For a benchmark intended to reproduce the former large-package workload,
+record the approximately 122,865-document / 1.07-million-issue shape explicitly.
+Its comparison budgets remain native schema validation within 60 seconds,
+complete unzip/hash/parse/validate/spool processing within 3 minutes (excluding
+remote download), and peak RSS within 512 MiB. Smaller probes must not be
+reported as satisfying those workload-specific time budgets. Issue-detail
+memory must remain bounded as issue volume increases.
+
+The historical `tidas-package-open_data-1784707539957.zip` is optional diagnostic
+material, not a canonical required fixture or a development/merge gate.
+Its absence is not a blocker and does not require searching a developer's home
+or Downloads directory, requesting a copy, or provisioning a shared download.
+Any voluntary replay uses an explicitly supplied path and records its input
+identity; it does not replace the reproducible regression evidence above.
+Separate consumer release-qualification workflows apply only when explicitly
+in scope; do not import them as prerequisites for ordinary Toolkit changes.
 
 ## PR validation note
 
